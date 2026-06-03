@@ -8,6 +8,8 @@ signal all_waves_completed
 ## ---- 波次配置 ----
 ## 后续规模变大时可改为 Resource 或 JSON 加载
 ## groups 中每组：[数量, 生成间隔, 类型, 血量, 速度, 奖励]
+const COUNTDOWN_SECONDS := 3
+
 var waves: Array[Dictionary] = [
 	{"groups": [
 		{"count": 5, "interval": 0.9, "type": "grunt", "hp": 30, "speed": 118.0, "reward": 10, "color": Color(0.25, 0.8, 0.25)},
@@ -40,6 +42,7 @@ var _enemies_alive: int = 0
 var _is_spawning: bool = false
 var _is_finished: bool = false
 var _current_group: int = 0
+var _is_waiting_to_spawn: bool = false
 
 ## ---- 节点引用 ----
 @onready var enemies_container: Node2D = get_node("../Enemies")
@@ -54,12 +57,18 @@ func _ready() -> void:
 
 ## 开始下一波
 func start_next_wave() -> void:
-	if _is_spawning or GameManager.is_game_over or _is_finished:
+	if _is_spawning or _is_waiting_to_spawn or GameManager.is_game_over or _is_finished:
 		return
 
 	if _current_wave >= waves.size():
 		_is_finished = true
 		all_waves_completed.emit()
+		return
+
+	_is_waiting_to_spawn = true
+	await _run_countdown()
+	_is_waiting_to_spawn = false
+	if GameManager.is_game_over or _is_finished or not is_inside_tree():
 		return
 
 	_is_spawning = true
@@ -120,6 +129,16 @@ func _on_spawn_timer_timeout() -> void:
 func _get_current_spawn_data() -> Dictionary:
 	var groups: Array = waves[_current_wave]["groups"]
 	return groups[_current_group]
+
+func _run_countdown() -> void:
+	for seconds_left in range(COUNTDOWN_SECONDS, 0, -1):
+		GameManager.notify_wave_countdown(seconds_left)
+		if not is_inside_tree():
+			return
+		var tree := get_tree()
+		await tree.create_timer(1.0).timeout
+		if GameManager.is_game_over:
+			return
 
 func _on_enemy_died() -> void:
 	_enemies_alive -= 1

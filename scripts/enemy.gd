@@ -95,6 +95,7 @@ func get_path_progress() -> float:
 
 ## 被击杀
 func _on_killed() -> void:
+	GameManager.notify_enemy_killed()
 	GameManager.add_gold(reward)
 	queue_free()
 

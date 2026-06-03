@@ -18,6 +18,7 @@ var _selected_cell: Vector2i = Vector2i(-1, -1)
 
 ## ---- 生命周期 ----
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	# 连接信号
 	GameManager.game_over.connect(_on_game_over)
 	wave_spawner.connect("all_waves_completed", _on_all_waves_completed)
@@ -32,6 +33,15 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			_toggle_pause()
+			return
+		if get_tree().paused:
+			return
+	elif get_tree().paused:
+		return
+
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_try_place_tower()
 
@@ -122,6 +132,7 @@ func _sell_selected_tower() -> void:
 func _start_game() -> void:
 	if _game_started or GameManager.is_game_over:
 		return
+	hud.call("hide_overlay")
 	_game_started = true
 	wave_spawner.call("start_next_wave")
 
@@ -129,6 +140,16 @@ func _restart_game() -> void:
 	get_tree().paused = false
 	GameManager.reset_game()
 	get_tree().reload_current_scene()
+
+func _toggle_pause() -> void:
+	if GameManager.is_game_over or not _game_started:
+		return
+	var tree := get_tree()
+	tree.paused = not tree.paused
+	if tree.paused:
+		hud.call("show_pause_screen")
+	else:
+		hud.call("hide_pause_screen")
 
 ## ---- 地图绘制 ----
 
@@ -198,5 +219,5 @@ func _on_game_over() -> void:
 
 func _on_all_waves_completed() -> void:
 	# 胜利！
-	GameManager.is_game_over = true
-	hud.call("show_message", "恭喜通关！", true)
+	GameManager.win_game()
+	get_tree().paused = true

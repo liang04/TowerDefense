@@ -14,19 +14,39 @@ var selected_tower_type: String = "basic"
 @onready var wave_label: Label = $MarginContainer/VBoxContainer/TopBar/WaveLabel
 @onready var info_label: Label = $MarginContainer/VBoxContainer/InfoLabel
 @onready var message_label: Label = $MarginContainer/VBoxContainer/MessageLabel
+@onready var overlay: Control = $Overlay
+@onready var start_panel: PanelContainer = $Overlay/StartPanel
+@onready var pause_panel: PanelContainer = $Overlay/PausePanel
+@onready var result_panel: PanelContainer = $Overlay/ResultPanel
+@onready var result_title: Label = $Overlay/ResultPanel/ResultBox/ResultTitle
+@onready var result_stats: Label = $Overlay/ResultPanel/ResultBox/ResultStats
+@onready var start_button: Button = $Overlay/StartPanel/StartBox/StartButton
+@onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
+@onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
+@onready var restart_result_button: Button = $Overlay/ResultPanel/ResultBox/RestartResultButton
 
 ## ---- 生命周期 ----
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	# 连接 GameManager 信号
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.lives_changed.connect(_on_lives_changed)
 	GameManager.wave_started.connect(_on_wave_started)
 	GameManager.wave_completed.connect(_on_wave_completed)
+	GameManager.wave_countdown.connect(_on_wave_countdown)
 	GameManager.game_over.connect(_on_game_over)
+	GameManager.game_won.connect(_on_game_won)
 	GameManager.tower_selection_changed.connect(_on_tower_selection_changed)
+
+	start_button.pressed.connect(_on_start_pressed)
+	resume_button.pressed.connect(_on_resume_pressed)
+	restart_pause_button.pressed.connect(_on_restart_pressed)
+	restart_result_button.pressed.connect(_on_restart_pressed)
 
 	# 初始化显示
 	_update_all()
+	show_start_screen()
 
 ## ---- 更新方法 ----
 
@@ -50,8 +70,14 @@ func _on_wave_started(wave_num: int) -> void:
 func _on_wave_completed(wave_num: int) -> void:
 	show_message("第 %d 波已清理，下一波即将开始" % wave_num)
 
+func _on_wave_countdown(seconds_left: int) -> void:
+	show_message("下一波 %d 秒后开始" % seconds_left)
+
 func _on_game_over() -> void:
-	show_message("游戏结束！按 R 重开", true)
+	show_result_screen(false)
+
+func _on_game_won() -> void:
+	show_result_screen(true)
 
 func _on_tower_selection_changed(_tower_type: String) -> void:
 	_update_selected_tower_text()
@@ -92,3 +118,51 @@ func show_message(text: String, persistent: bool = false) -> void:
 		return
 	if message_label.text == text:
 		message_label.text = ""
+
+func show_start_screen() -> void:
+	overlay.visible = true
+	start_panel.visible = true
+	pause_panel.visible = false
+	result_panel.visible = false
+
+func hide_overlay() -> void:
+	overlay.visible = false
+	start_panel.visible = false
+	pause_panel.visible = false
+	result_panel.visible = false
+
+func show_pause_screen() -> void:
+	overlay.visible = true
+	start_panel.visible = false
+	pause_panel.visible = true
+	result_panel.visible = false
+
+func hide_pause_screen() -> void:
+	if pause_panel.visible:
+		hide_overlay()
+
+func show_result_screen(won: bool) -> void:
+	overlay.visible = true
+	start_panel.visible = false
+	pause_panel.visible = false
+	result_panel.visible = true
+	result_title.text = "胜利" if won else "失败"
+	result_stats.text = "到达波次: %d\n击杀敌人: %d\n漏掉敌人: %d\n剩余生命: %d\n剩余金币: %d" % [
+		GameManager.current_wave,
+		GameManager.enemies_killed,
+		GameManager.enemies_leaked,
+		GameManager.lives,
+		GameManager.gold,
+	]
+
+func _on_start_pressed() -> void:
+	hide_overlay()
+	get_parent().call("_start_game")
+
+func _on_resume_pressed() -> void:
+	get_tree().paused = false
+	hide_overlay()
+
+func _on_restart_pressed() -> void:
+	get_tree().paused = false
+	get_parent().call("_restart_game")

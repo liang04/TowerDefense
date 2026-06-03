@@ -77,3 +77,117 @@ text = "当前: 箭塔 | 费用: 45 | 均衡、便宜、射速快"
 [node name="MessageLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
 horizontal_alignment = 1
+
+[node name="Overlay" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="HUD/Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="StartPanel" type="PanelContainer" parent="HUD/Overlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -125.0
+offset_right = 230.0
+offset_bottom = 125.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StartBox" type="VBoxContainer" parent="HUD/Overlay/StartPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StartTitle" type="Label" parent="HUD/Overlay/StartPanel/StartBox"]
+layout_mode = 2
+text = "塔防练习场"
+horizontal_alignment = 1
+
+[node name="StartHelp" type="Label" parent="HUD/Overlay/StartPanel/StartBox"]
+layout_mode = 2
+text = "建塔阻止敌人到达终点。\n1/2/3 选塔，左键建造或选塔，U 升级，X 出售。\nP 或 Esc 暂停。"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="HUD/Overlay/StartPanel/StartBox"]
+layout_mode = 2
+text = "开始游戏"
+
+[node name="PausePanel" type="PanelContainer" parent="HUD/Overlay"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -90.0
+offset_right = 180.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PauseBox" type="VBoxContainer" parent="HUD/Overlay/PausePanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PauseTitle" type="Label" parent="HUD/Overlay/PausePanel/PauseBox"]
+layout_mode = 2
+text = "已暂停"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="HUD/Overlay/PausePanel/PauseBox"]
+layout_mode = 2
+text = "继续"
+
+[node name="RestartPauseButton" type="Button" parent="HUD/Overlay/PausePanel/PauseBox"]
+layout_mode = 2
+text = "重新开始"
+
+[node name="ResultPanel" type="PanelContainer" parent="HUD/Overlay"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -130.0
+offset_right = 220.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultBox" type="VBoxContainer" parent="HUD/Overlay/ResultPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResultTitle" type="Label" parent="HUD/Overlay/ResultPanel/ResultBox"]
+layout_mode = 2
+text = "结算"
+horizontal_alignment = 1
+
+[node name="ResultStats" type="Label" parent="HUD/Overlay/ResultPanel/ResultBox"]
+layout_mode = 2
+text = "统计"
+horizontal_alignment = 1
+
+[node name="RestartResultButton" type="Button" parent="HUD/Overlay/ResultPanel/ResultBox"]
+layout_mode = 2
+text = "再来一局"

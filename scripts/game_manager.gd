@@ -6,8 +6,10 @@ extends Node
 signal gold_changed(new_gold: int)
 signal lives_changed(new_lives: int)
 signal game_over
+signal game_won
 signal wave_started(wave_num: int)
 signal wave_completed(wave_num: int)
+signal wave_countdown(seconds_left: int)
 signal tower_selection_changed(tower_type: String)
 
 ## ---- 常量 ----
@@ -60,6 +62,9 @@ var gold: int = STARTING_GOLD
 var lives: int = STARTING_LIVES
 var is_game_over: bool = false
 var selected_tower_type: String = "arrow"
+var current_wave: int = 0
+var enemies_killed: int = 0
+var enemies_leaked: int = 0
 
 ## 网格占用表：key = Vector2i(列, 行), value = true 表示已占用
 var occupied_cells: Dictionary = {}
@@ -186,10 +191,14 @@ func add_gold(amount: int) -> void:
 	gold += amount
 	gold_changed.emit(gold)
 
+func notify_enemy_killed() -> void:
+	enemies_killed += 1
+
 ## 怪物到达终点
 func lose_life(amount: int = 1) -> void:
 	if is_game_over:
 		return
+	enemies_leaked += amount
 	lives -= amount
 	if lives < 0:
 		lives = 0
@@ -200,15 +209,28 @@ func lose_life(amount: int = 1) -> void:
 
 ## 波次事件
 func notify_wave_started(wave_num: int) -> void:
+	current_wave = wave_num
 	wave_started.emit(wave_num)
 
 func notify_wave_completed(wave_num: int) -> void:
 	wave_completed.emit(wave_num)
 
+func notify_wave_countdown(seconds_left: int) -> void:
+	wave_countdown.emit(seconds_left)
+
+func win_game() -> void:
+	if is_game_over:
+		return
+	is_game_over = true
+	game_won.emit()
+
 func reset_game() -> void:
 	gold = STARTING_GOLD
 	lives = STARTING_LIVES
 	is_game_over = false
+	current_wave = 0
+	enemies_killed = 0
+	enemies_leaked = 0
 	occupied_cells.clear()
 	towers_by_cell.clear()
 	selected_tower_type = "arrow"
