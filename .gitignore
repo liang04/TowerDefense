@@ -1,0 +1,16 @@
+# Godot editor/import cache
+.godot/
+
+# Godot generated files
+*.translation
+
+# Exported builds
+build/
+builds/
+exports/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
