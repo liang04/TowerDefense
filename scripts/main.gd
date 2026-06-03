@@ -4,11 +4,13 @@ extends Node2D
 
 ## ---- 预加载 ----
 var _tower_scene: PackedScene = preload("res://scenes/tower.tscn")
+var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 
 ## ---- 节点引用 ----
 @onready var towers_container: Node2D = $Towers
 @onready var wave_spawner: Node = $WaveSpawner
 @onready var hud: Node = $HUD
+@onready var effects_container: Node2D = $Effects
 
 ## ---- 状态 ----
 var _hover_cell: Vector2i = Vector2i(-1, -1)  # 鼠标悬停的格子
@@ -21,6 +23,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	# 连接信号
 	GameManager.game_over.connect(_on_game_over)
+	GameManager.life_lost.connect(_on_life_lost)
 	wave_spawner.connect("all_waves_completed", _on_all_waves_completed)
 	queue_redraw()
 
@@ -216,6 +219,14 @@ func _draw_hover() -> void:
 
 func _on_game_over() -> void:
 	get_tree().paused = true
+
+func _on_life_lost(_new_lives: int) -> void:
+	if GameManager.path_points.is_empty():
+		return
+	var effect := _hit_effect_scene.instantiate()
+	effects_container.add_child(effect)
+	effect.call("setup", GameManager.path_points[GameManager.path_points.size() - 1], Color(1.0, 0.15, 0.12), 42.0)
+	hud.call("show_message", "敌人突破防线，生命 -1")
 
 func _on_all_waves_completed() -> void:
 	# 胜利！

@@ -15,6 +15,7 @@ var _waypoints: PackedVector2Array = []
 var _current_wp_index: int = 0
 var _slow_timer: float = 0.0
 var _slow_multiplier: float = 1.0
+var _hit_flash_timer: float = 0.0
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -29,6 +30,7 @@ func _process(delta: float) -> void:
 		return
 
 	_slow_timer = maxf(_slow_timer - delta, 0.0)
+	_hit_flash_timer = maxf(_hit_flash_timer - delta, 0.0)
 	if _slow_timer <= 0.0:
 		_slow_multiplier = 1.0
 
@@ -53,6 +55,8 @@ func _process(delta: float) -> void:
 ## 受到伤害
 func take_damage(damage: int) -> void:
 	hp -= damage
+	_hit_flash_timer = 0.1
+	queue_redraw()
 	if hp <= 0:
 		_on_killed()
 
@@ -115,6 +119,9 @@ func _draw() -> void:
 		color = Color(0.9, 0.8, 0.1)   # 黄：中等
 	else:
 		color = Color(0.9, 0.2, 0.2)   # 红：危险
+
+	if _hit_flash_timer > 0.0:
+		color = color.lerp(Color.WHITE, 0.65)
 
 	draw_rect(rect, color)
 	if _slow_timer > 0.0:

@@ -5,6 +5,7 @@ extends Node
 ## ---- 信号 ----
 signal gold_changed(new_gold: int)
 signal lives_changed(new_lives: int)
+signal life_lost(new_lives: int)
 signal game_over
 signal game_won
 signal wave_started(wave_num: int)
@@ -203,6 +204,7 @@ func lose_life(amount: int = 1) -> void:
 	if lives < 0:
 		lives = 0
 	lives_changed.emit(lives)
+	life_lost.emit(lives)
 	if lives <= 0:
 		is_game_over = true
 		game_over.emit()

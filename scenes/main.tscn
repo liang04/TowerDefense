@@ -16,6 +16,10 @@ color = Color(0.15, 0.18, 0.12, 1)
 
 [node name="Enemies" type="Node2D" parent="."]
 
+[node name="Projectiles" type="Node2D" parent="."]
+
+[node name="Effects" type="Node2D" parent="."]
+
 [node name="WaveSpawner" type="Node" parent="."]
 script = ExtResource("2")
 

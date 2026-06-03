@@ -2,6 +2,8 @@
 ## 自动攻击范围内最近的敌人
 extends Node2D
 
+var _projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
+
 ## ---- 属性 ----
 var tower_type: String = "arrow"
 var tower_name: String = "箭塔"
@@ -74,11 +76,26 @@ func _select_target() -> void:
 	_current_target = best_target
 
 func _attack(target: Node2D) -> void:
-	if target.has_method("take_damage"):
-		target.call("take_damage", attack_damage)
-		if slow_duration > 0.0 and target.has_method("apply_slow"):
-			target.call("apply_slow", slow_multiplier, slow_duration)
-		_shot_flash_timer = 0.12
+	if not is_instance_valid(target):
+		return
+
+	var projectiles_container := _get_projectiles_container()
+	if projectiles_container == null:
+		return
+
+	var projectile := _projectile_scene.instantiate()
+	projectiles_container.add_child(projectile)
+	projectile.call("setup", global_position, target, attack_damage, slow_multiplier, slow_duration, body_color)
+	_shot_flash_timer = 0.12
+
+func _get_projectiles_container() -> Node:
+	var current := get_parent()
+	while current:
+		var projectiles := current.get_node_or_null("Projectiles")
+		if projectiles:
+			return projectiles
+		current = current.get_parent()
+	return null
 
 func setup(new_tower_type: String, new_grid_cell: Vector2i) -> void:
 	tower_type = new_tower_type
