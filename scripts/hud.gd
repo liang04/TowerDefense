@@ -28,6 +28,7 @@ var selected_tower_type: String = "basic"
 ## ---- 生命周期 ----
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_make_gameplay_hud_click_through($MarginContainer)
 
 	# 连接 GameManager 信号
 	GameManager.gold_changed.connect(_on_gold_changed)
@@ -47,6 +48,12 @@ func _ready() -> void:
 	# 初始化显示
 	_update_all()
 	hide_overlay()
+
+func _make_gameplay_hud_click_through(node: Node) -> void:
+	if node is Control:
+		(node as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_make_gameplay_hud_click_through(child)
 
 ## ---- 更新方法 ----
 
