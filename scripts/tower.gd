@@ -3,9 +3,18 @@
 extends Node2D
 
 ## ---- 属性 ----
+var tower_type: String = "arrow"
+var tower_name: String = "箭塔"
+var level: int = 1
+var max_level: int = 3
+var grid_cell: Vector2i = Vector2i.ZERO
+var total_spent: int = 0
 var attack_damage: int = 10
 var attack_range: float = 160.0   # 像素
 var attack_cooldown: float = 1.0  # 秒
+var slow_multiplier: float = 1.0
+var slow_duration: float = 0.0
+var body_color: Color = Color(0.2, 0.45, 0.95)
 
 ## ---- 内部状态 ----
 var _cooldown_timer: float = 0.0
@@ -17,10 +26,7 @@ var _shot_flash_timer: float = 0.0
 
 ## ---- 生命周期 ----
 func _ready() -> void:
-	# 配置攻击范围碰撞体
-	var shape := CircleShape2D.new()
-	shape.radius = attack_range
-	attack_area.get_node("CollisionShape2D").shape = shape
+	_apply_config()
 
 func _process(delta: float) -> void:
 	_cooldown_timer = maxf(_cooldown_timer - delta, 0.0)
@@ -70,15 +76,72 @@ func _select_target() -> void:
 func _attack(target: Node2D) -> void:
 	if target.has_method("take_damage"):
 		target.call("take_damage", attack_damage)
+		if slow_duration > 0.0 and target.has_method("apply_slow"):
+			target.call("apply_slow", slow_multiplier, slow_duration)
 		_shot_flash_timer = 0.12
+
+func setup(new_tower_type: String, new_grid_cell: Vector2i) -> void:
+	tower_type = new_tower_type
+	grid_cell = new_grid_cell
+	level = 1
+	total_spent = GameManager.get_tower_cost(tower_type)
+	_apply_config()
+
+func can_upgrade() -> bool:
+	return level < max_level
+
+func get_upgrade_cost() -> int:
+	if not can_upgrade():
+		return 0
+	var base_cost := GameManager.get_tower_cost(tower_type)
+	return int(round(float(base_cost) * (0.65 + float(level) * 0.35)))
+
+func upgrade() -> bool:
+	if not can_upgrade():
+		return false
+	var cost := get_upgrade_cost()
+	level += 1
+	total_spent += cost
+	_apply_config()
+	_shot_flash_timer = 0.2
+	return true
+
+func get_sell_value() -> int:
+	return int(round(float(total_spent) * 0.6))
+
+func get_display_name() -> String:
+	return "%s Lv.%d" % [tower_name, level]
+
+func _apply_config() -> void:
+	var config := GameManager.get_tower_config(tower_type)
+	var level_scale := 1.0 + float(level - 1) * 0.45
+	var range_bonus := float(level - 1) * 14.0
+	var cooldown_scale := 1.0 - float(level - 1) * 0.12
+
+	tower_name = String(config["name"])
+	attack_damage = int(round(float(config["damage"]) * level_scale))
+	attack_range = float(config["range"]) + range_bonus
+	attack_cooldown = maxf(float(config["cooldown"]) * cooldown_scale, 0.18)
+	slow_multiplier = float(config["slow_multiplier"])
+	slow_duration = float(config["slow_duration"])
+	var color_value = config["color"]
+	if color_value is Color:
+		body_color = color_value
+
+	if is_node_ready():
+		var shape := CircleShape2D.new()
+		shape.radius = attack_range
+		attack_area.get_node("CollisionShape2D").shape = shape
+	queue_redraw()
 
 ## ---- 绘制（用色块代替美术资源） ----
 func _draw() -> void:
 	# 塔身（蓝色方块）
 	var rect := Rect2(-25, -25, 50, 50)
-	var body_color := Color(0.2, 0.4, 0.9) if _shot_flash_timer <= 0.0 else Color(1.0, 0.85, 0.25)
-	draw_rect(rect, body_color)
+	var draw_color := body_color if _shot_flash_timer <= 0.0 else Color(1.0, 0.9, 0.25)
+	draw_rect(rect, draw_color)
 	draw_rect(Rect2(-12, -35, 24, 14), Color(0.12, 0.18, 0.35))
+	draw_circle(Vector2(0, 0), 5.0 + float(level) * 2.0, Color(1, 1, 1, 0.75))
 
 	draw_arc(Vector2.ZERO, attack_range, 0, TAU, 64, Color(0.35, 0.55, 1.0, 0.18), 1.0)
 

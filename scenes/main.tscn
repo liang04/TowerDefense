@@ -47,7 +47,7 @@ theme_override_constants/separation = 24
 
 [node name="GoldLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
-text = "金币: 100"
+text = "金币: 160"
 
 [node name="LivesLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
@@ -68,6 +68,11 @@ text = "右键/空格开始 | 左键放塔 | R 重开"
 [node name="Spacer2" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="InfoLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "当前: 箭塔 | 费用: 45 | 均衡、便宜、射速快"
 
 [node name="MessageLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2

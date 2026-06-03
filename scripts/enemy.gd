@@ -5,12 +5,16 @@ extends Node2D
 ## ---- 属性 ----
 var max_hp: int = 30
 var hp: int = 30
+var enemy_type: String = "grunt"
 var speed: float = 120.0     # 像素/秒
 var reward: int = 10         # 击杀金币奖励
+var body_color: Color = Color(0.2, 0.8, 0.2)
 
 ## ---- 内部状态 ----
 var _waypoints: PackedVector2Array = []
 var _current_wp_index: int = 0
+var _slow_timer: float = 0.0
+var _slow_multiplier: float = 1.0
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -24,9 +28,13 @@ func _process(delta: float) -> void:
 	if _current_wp_index >= _waypoints.size():
 		return
 
+	_slow_timer = maxf(_slow_timer - delta, 0.0)
+	if _slow_timer <= 0.0:
+		_slow_multiplier = 1.0
+
 	var target := _waypoints[_current_wp_index]
 	var direction := (target - global_position).normalized()
-	var move_distance := speed * delta
+	var move_distance := speed * _slow_multiplier * delta
 	var distance_to_target := global_position.distance_to(target)
 
 	if move_distance >= distance_to_target:
@@ -47,6 +55,23 @@ func take_damage(damage: int) -> void:
 	hp -= damage
 	if hp <= 0:
 		_on_killed()
+
+func apply_slow(multiplier: float, duration: float) -> void:
+	if duration <= 0.0:
+		return
+	_slow_multiplier = minf(_slow_multiplier, clampf(multiplier, 0.2, 1.0))
+	_slow_timer = maxf(_slow_timer, duration)
+	queue_redraw()
+
+func setup(data: Dictionary) -> void:
+	enemy_type = String(data.get("type", "grunt"))
+	max_hp = int(data.get("hp", max_hp))
+	hp = max_hp
+	speed = float(data.get("speed", speed))
+	reward = int(data.get("reward", reward))
+	var color_value = data.get("color", body_color)
+	if color_value is Color:
+		body_color = color_value
 
 func get_path_progress() -> float:
 	if _waypoints.is_empty():
@@ -84,13 +109,15 @@ func _draw() -> void:
 	var color: Color
 
 	if hp > max_hp * 0.6:
-		color = Color(0.2, 0.8, 0.2)   # 绿：健康
+		color = body_color
 	elif hp > max_hp * 0.3:
 		color = Color(0.9, 0.8, 0.1)   # 黄：中等
 	else:
 		color = Color(0.9, 0.2, 0.2)   # 红：危险
 
 	draw_rect(rect, color)
+	if _slow_timer > 0.0:
+		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
 
 	# 血量条背景
 	var bar_bg := Rect2(-15, -22, 30, 5)

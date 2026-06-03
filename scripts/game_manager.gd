@@ -8,6 +8,7 @@ signal lives_changed(new_lives: int)
 signal game_over
 signal wave_started(wave_num: int)
 signal wave_completed(wave_num: int)
+signal tower_selection_changed(tower_type: String)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -15,17 +16,54 @@ const GRID_COLS := 12       # 地图列数（宽）
 const GRID_ROWS := 8        # 地图行数（高）
 
 ## ---- 初始值 ----
-const STARTING_GOLD := 100
+const STARTING_GOLD := 160
 const STARTING_LIVES := 20
-const TOWER_COST := 50
+
+var tower_configs: Dictionary = {
+	"arrow": {
+		"name": "箭塔",
+		"cost": 45,
+		"damage": 9,
+		"range": 170.0,
+		"cooldown": 0.65,
+		"slow_multiplier": 1.0,
+		"slow_duration": 0.0,
+		"color": Color(0.2, 0.45, 0.95),
+		"description": "均衡、便宜、射速快",
+	},
+	"cannon": {
+		"name": "炮塔",
+		"cost": 75,
+		"damage": 24,
+		"range": 145.0,
+		"cooldown": 1.25,
+		"slow_multiplier": 1.0,
+		"slow_duration": 0.0,
+		"color": Color(0.9, 0.35, 0.18),
+		"description": "伤害高，射速慢",
+	},
+	"frost": {
+		"name": "冰塔",
+		"cost": 60,
+		"damage": 5,
+		"range": 155.0,
+		"cooldown": 0.9,
+		"slow_multiplier": 0.55,
+		"slow_duration": 1.4,
+		"color": Color(0.25, 0.75, 0.95),
+		"description": "伤害低，可减速",
+	},
+}
 
 ## ---- 状态 ----
 var gold: int = STARTING_GOLD
 var lives: int = STARTING_LIVES
 var is_game_over: bool = false
+var selected_tower_type: String = "arrow"
 
 ## 网格占用表：key = Vector2i(列, 行), value = true 表示已占用
 var occupied_cells: Dictionary = {}
+var towers_by_cell: Dictionary = {}
 
 ## 路径格子集合（不可放塔）
 var path_cells: Dictionary = {}
@@ -69,8 +107,9 @@ func _init_path() -> void:
 ## ---- 公共方法 ----
 
 ## 尝试在指定网格位置放塔，成功返回 true
-func try_place_tower(grid_col: int, grid_row: int, cost: int) -> bool:
+func try_place_tower(grid_col: int, grid_row: int, tower_type: String) -> bool:
 	var cell := Vector2i(grid_col, grid_row)
+	var cost := get_tower_cost(tower_type)
 
 	if is_game_over:
 		return false
@@ -86,12 +125,52 @@ func try_place_tower(grid_col: int, grid_row: int, cost: int) -> bool:
 	gold_changed.emit(gold)
 	return true
 
+func register_tower(grid_col: int, grid_row: int, tower: Node) -> void:
+	var cell := Vector2i(grid_col, grid_row)
+	towers_by_cell[cell] = tower
+
+func remove_tower(grid_col: int, grid_row: int) -> void:
+	var cell := Vector2i(grid_col, grid_row)
+	occupied_cells.erase(cell)
+	towers_by_cell.erase(cell)
+
+func get_tower_at(grid_col: int, grid_row: int) -> Node:
+	var cell := Vector2i(grid_col, grid_row)
+	var tower = towers_by_cell.get(cell, null)
+	if tower is Node:
+		return tower
+	return null
+
 ## 检查某格子是否可放塔
 func can_place_tower(grid_col: int, grid_row: int) -> bool:
 	var cell := Vector2i(grid_col, grid_row)
 	return cell not in occupied_cells and cell not in path_cells \
 		and grid_col >= 0 and grid_col < GRID_COLS \
 		and grid_row >= 0 and grid_row < GRID_ROWS
+
+func can_afford(amount: int) -> bool:
+	return gold >= amount
+
+func spend_gold(amount: int) -> bool:
+	if gold < amount:
+		return false
+	gold -= amount
+	gold_changed.emit(gold)
+	return true
+
+func get_tower_config(tower_type: String) -> Dictionary:
+	if tower_type in tower_configs:
+		return tower_configs[tower_type]
+	return tower_configs["arrow"]
+
+func get_tower_cost(tower_type: String) -> int:
+	return int(get_tower_config(tower_type)["cost"])
+
+func set_selected_tower_type(tower_type: String) -> void:
+	if not (tower_type in tower_configs):
+		return
+	selected_tower_type = tower_type
+	tower_selection_changed.emit(selected_tower_type)
 
 ## 网格坐标转像素坐标（格子中心）
 func grid_to_pixel(grid_col: int, grid_row: int) -> Vector2:
@@ -131,6 +210,9 @@ func reset_game() -> void:
 	lives = STARTING_LIVES
 	is_game_over = false
 	occupied_cells.clear()
+	towers_by_cell.clear()
+	selected_tower_type = "arrow"
 	_init_path()
 	gold_changed.emit(gold)
 	lives_changed.emit(lives)
+	tower_selection_changed.emit(selected_tower_type)
