@@ -86,6 +86,23 @@ func _try_place_tower() -> void:
 		GameManager.register_tower(col, row, tower)
 		_select_existing_tower(tower, Vector2i(col, row))
 		queue_redraw()
+	else:
+		hud.call("show_message", _get_place_error_message(col, row))
+
+func _get_place_error_message(col: int, row: int) -> String:
+	var cell := Vector2i(col, row)
+	if col < 0 or col >= GameManager.GRID_COLS or row < 0 or row >= GameManager.GRID_ROWS:
+		return "不能在地图外建塔"
+	if cell in GameManager.path_cells:
+		return "道路上不能建塔"
+	if cell in GameManager.occupied_cells:
+		return "这里已经有塔了"
+
+	var cost := GameManager.get_tower_cost(GameManager.selected_tower_type)
+	if GameManager.gold < cost:
+		return "金币不足，需要 %d" % cost
+
+	return "这里不能建塔"
 
 func _select_tower_type(tower_type: String) -> void:
 	GameManager.set_selected_tower_type(tower_type)
@@ -159,9 +176,52 @@ func _toggle_pause() -> void:
 ## ---- 地图绘制 ----
 
 func _draw() -> void:
+	_draw_background()
+	_draw_buildable_cells()
 	_draw_grid()
 	_draw_path()
 	_draw_hover()
+
+func _draw_background() -> void:
+	var map_size := Vector2(GameManager.GRID_COLS * GameManager.CELL_SIZE, GameManager.GRID_ROWS * GameManager.CELL_SIZE)
+	draw_rect(Rect2(Vector2.ZERO, map_size), Color(0.11, 0.2, 0.13))
+
+	for row in range(GameManager.GRID_ROWS):
+		for col in range(GameManager.GRID_COLS):
+			var cell_origin := Vector2(col * GameManager.CELL_SIZE, row * GameManager.CELL_SIZE)
+			var tint := Color(0.13, 0.24, 0.15, 0.45) if (col + row) % 2 == 0 else Color(0.1, 0.18, 0.12, 0.35)
+			draw_rect(Rect2(cell_origin, Vector2(GameManager.CELL_SIZE, GameManager.CELL_SIZE)), tint)
+
+	# 固定装饰点，避免运行时随机导致地图闪烁。
+	var decorations := [
+		Vector2(1.4, 5.8), Vector2(2.3, 6.8), Vector2(4.8, 0.8),
+		Vector2(5.2, 2.0), Vector2(8.6, 6.2), Vector2(10.5, 4.2),
+		Vector2(11.2, 0.7), Vector2(0.6, 3.8)
+	]
+	for i in range(decorations.size()):
+		var pos: Vector2 = decorations[i] * GameManager.CELL_SIZE
+		if i % 3 == 0:
+			draw_circle(pos, 10.0, Color(0.07, 0.13, 0.08, 0.65))
+			draw_circle(pos + Vector2(7, -3), 7.0, Color(0.08, 0.16, 0.09, 0.55))
+		else:
+			draw_circle(pos, 6.0, Color(0.18, 0.18, 0.16, 0.6))
+			draw_circle(pos + Vector2(5, 4), 4.0, Color(0.1, 0.1, 0.09, 0.55))
+
+func _draw_buildable_cells() -> void:
+	for row in range(GameManager.GRID_ROWS):
+		for col in range(GameManager.GRID_COLS):
+			var cell := Vector2i(col, row)
+			if cell in GameManager.path_cells or cell in GameManager.occupied_cells:
+				continue
+
+			var rect := Rect2(
+				col * GameManager.CELL_SIZE + 8,
+				row * GameManager.CELL_SIZE + 8,
+				GameManager.CELL_SIZE - 16,
+				GameManager.CELL_SIZE - 16
+			)
+			draw_rect(rect, Color(0.18, 0.55, 0.24, 0.22))
+			draw_rect(rect, Color(0.37, 0.85, 0.42, 0.28), false, 1.0)
 
 func _draw_grid() -> void:
 	# 绘制网格线

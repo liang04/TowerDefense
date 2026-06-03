@@ -128,7 +128,7 @@ horizontal_alignment = 1
 
 [node name="StartHelp" type="Label" parent="HUD/Overlay/StartPanel/StartBox"]
 layout_mode = 2
-text = "建塔阻止敌人到达终点。\n1/2/3 选塔，左键建造或选塔，U 升级，X 出售。\nP 或 Esc 暂停。"
+text = "绿色地块可以建塔，土路不能建塔。\n1/2/3 选塔，左键建造或选塔，U 升级，X 出售。\nP 或 Esc 暂停。"
 horizontal_alignment = 1
 
 [node name="StartButton" type="Button" parent="HUD/Overlay/StartPanel/StartBox"]
