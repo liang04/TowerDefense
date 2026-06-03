@@ -46,7 +46,7 @@ func _ready() -> void:
 
 	# 初始化显示
 	_update_all()
-	show_start_screen()
+	hide_overlay()
 
 ## ---- 更新方法 ----
 
