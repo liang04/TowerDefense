@@ -110,7 +110,6 @@ func _on_reached_end() -> void:
 
 ## ---- 绘制（用色块代替美术资源） ----
 func _draw() -> void:
-	var rect := Rect2(-15, -15, 30, 30)
 	var color: Color
 
 	if hp > max_hp * 0.6:
@@ -123,7 +122,20 @@ func _draw() -> void:
 	if _hit_flash_timer > 0.0:
 		color = color.lerp(Color.WHITE, 0.65)
 
-	draw_rect(rect, color)
+	if enemy_type == "runner":
+		var runner_shape := PackedVector2Array([
+			Vector2(0, -18), Vector2(18, 0), Vector2(0, 18), Vector2(-18, 0)
+		])
+		draw_polygon(runner_shape, PackedColorArray([color]))
+		draw_circle(Vector2(0, 0), 5.0, Color(0.12, 0.12, 0.08, 0.65))
+	elif enemy_type == "tank":
+		draw_rect(Rect2(-19, -17, 38, 34), Color(0.12, 0.1, 0.08))
+		draw_rect(Rect2(-16, -14, 32, 28), color)
+		draw_line(Vector2(-10, -3), Vector2(10, -3), Color(0.18, 0.16, 0.13), 3.0)
+	else:
+		draw_rect(Rect2(-15, -15, 30, 30), color)
+		draw_circle(Vector2(0, 0), 4.0, Color(0.08, 0.12, 0.08, 0.55))
+
 	if _slow_timer > 0.0:
 		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
 

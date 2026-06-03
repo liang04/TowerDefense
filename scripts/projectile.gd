@@ -42,6 +42,7 @@ func _hit() -> void:
 		_target.call("take_damage", damage)
 		if slow_duration > 0.0 and _target.has_method("apply_slow"):
 			_target.call("apply_slow", slow_multiplier, slow_duration)
+		GameManager.request_sfx("hit")
 
 	_spawn_hit_effect()
 	queue_free()

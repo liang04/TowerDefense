@@ -86,6 +86,7 @@ func _attack(target: Node2D) -> void:
 	var projectile := _projectile_scene.instantiate()
 	projectiles_container.add_child(projectile)
 	projectile.call("setup", global_position, target, attack_damage, slow_multiplier, slow_duration, body_color)
+	GameManager.request_sfx("shoot")
 	_shot_flash_timer = 0.12
 
 func _get_projectiles_container() -> Node:
@@ -153,12 +154,27 @@ func _apply_config() -> void:
 
 ## ---- 绘制（用色块代替美术资源） ----
 func _draw() -> void:
-	# 塔身（蓝色方块）
-	var rect := Rect2(-25, -25, 50, 50)
 	var draw_color := body_color if _shot_flash_timer <= 0.0 else Color(1.0, 0.9, 0.25)
-	draw_rect(rect, draw_color)
-	draw_rect(Rect2(-12, -35, 24, 14), Color(0.12, 0.18, 0.35))
-	draw_circle(Vector2(0, 0), 5.0 + float(level) * 2.0, Color(1, 1, 1, 0.75))
+	draw_circle(Vector2.ZERO, 28.0, Color(0.07, 0.09, 0.11))
+
+	if tower_type == "cannon":
+		draw_circle(Vector2.ZERO, 23.0, draw_color)
+		draw_rect(Rect2(-8, -38, 16, 38), Color(0.12, 0.12, 0.13))
+		draw_circle(Vector2(0, -34), 7.0, Color(0.06, 0.06, 0.07))
+	elif tower_type == "frost":
+		var points := PackedVector2Array([
+			Vector2(0, -30), Vector2(28, 0), Vector2(0, 30), Vector2(-28, 0)
+		])
+		draw_polygon(points, PackedColorArray([draw_color]))
+		draw_arc(Vector2.ZERO, 18.0, 0, TAU, 6, Color(0.8, 1.0, 1.0, 0.9), 3.0)
+	else:
+		draw_rect(Rect2(-22, -18, 44, 38), draw_color)
+		var arrow_head := PackedVector2Array([
+			Vector2(0, -36), Vector2(24, -12), Vector2(-24, -12)
+		])
+		draw_polygon(arrow_head, PackedColorArray([Color(0.12, 0.18, 0.35)]))
+
+	draw_circle(Vector2(0, 0), 5.0 + float(level) * 2.0, Color(1, 1, 1, 0.78))
 
 	draw_arc(Vector2.ZERO, attack_range, 0, TAU, 64, Color(0.35, 0.55, 1.0, 0.18), 1.0)
 

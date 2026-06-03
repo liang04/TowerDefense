@@ -12,6 +12,7 @@ signal wave_started(wave_num: int)
 signal wave_completed(wave_num: int)
 signal wave_countdown(seconds_left: int)
 signal tower_selection_changed(tower_type: String)
+signal sfx_requested(sfx_name: String)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -194,6 +195,7 @@ func add_gold(amount: int) -> void:
 
 func notify_enemy_killed() -> void:
 	enemies_killed += 1
+	request_sfx("kill")
 
 ## 怪物到达终点
 func lose_life(amount: int = 1) -> void:
@@ -205,13 +207,16 @@ func lose_life(amount: int = 1) -> void:
 		lives = 0
 	lives_changed.emit(lives)
 	life_lost.emit(lives)
+	request_sfx("leak")
 	if lives <= 0:
 		is_game_over = true
+		request_sfx("game_over")
 		game_over.emit()
 
 ## 波次事件
 func notify_wave_started(wave_num: int) -> void:
 	current_wave = wave_num
+	request_sfx("wave")
 	wave_started.emit(wave_num)
 
 func notify_wave_completed(wave_num: int) -> void:
@@ -224,7 +229,11 @@ func win_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	request_sfx("win")
 	game_won.emit()
+
+func request_sfx(sfx_name: String) -> void:
+	sfx_requested.emit(sfx_name)
 
 func reset_game() -> void:
 	gold = STARTING_GOLD

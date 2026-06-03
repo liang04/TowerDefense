@@ -114,6 +114,7 @@ func _upgrade_selected_tower() -> void:
 		return
 
 	_selected_tower.call("upgrade")
+	GameManager.request_sfx("upgrade")
 	hud.call("show_tower_details", _selected_tower)
 	queue_redraw()
 
@@ -124,6 +125,7 @@ func _sell_selected_tower() -> void:
 
 	var refund := int(_selected_tower.call("get_sell_value"))
 	GameManager.add_gold(refund)
+	GameManager.request_sfx("sell")
 	GameManager.remove_tower(_selected_cell.x, _selected_cell.y)
 	_selected_tower.queue_free()
 	_selected_tower = null
@@ -182,12 +184,19 @@ func _draw_path() -> void:
 			GameManager.CELL_SIZE
 		)
 		draw_rect(rect, Color(0.35, 0.28, 0.2))  # 泥土色路径
+		draw_rect(rect.grow(-3), Color(0.42, 0.34, 0.23, 0.65), false, 2.0)
 
 	# 绘制路径点连线（辅助线）
 	if GameManager.path_points.size() > 1:
 		for i in range(GameManager.path_points.size() - 1):
 			draw_line(GameManager.path_points[i], GameManager.path_points[i + 1],
 					  Color(0.5, 0.4, 0.25, 0.6), 3.0)
+
+		var start_point := GameManager.path_points[0]
+		var end_point := GameManager.path_points[GameManager.path_points.size() - 1]
+		draw_circle(start_point, 14.0, Color(0.3, 0.8, 0.35, 0.95))
+		draw_circle(end_point, 16.0, Color(0.9, 0.2, 0.18, 0.95))
+		draw_arc(end_point, 24.0, 0.0, TAU, 32, Color(1.0, 0.35, 0.25, 0.75), 3.0)
 
 func _draw_hover() -> void:
 	# 鼠标悬停高亮
