@@ -25,6 +25,7 @@ var selected_tower_type: String = "basic"
 @onready var start_button: Button = $Overlay/StartPanel/StartBox/StartButton
 @onready var level_select_button: Button = $MarginContainer/VBoxContainer/TopBar/LevelSelectButton
 @onready var start_wave_button: Button = $MarginContainer/VBoxContainer/TopBar/StartWaveButton
+@onready var restart_button: Button = $MarginContainer/VBoxContainer/TopBar/RestartButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
 @onready var prev_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/PrevLevelButton
@@ -64,6 +65,7 @@ func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	level_select_button.pressed.connect(_on_level_select_pressed)
 	start_wave_button.pressed.connect(_on_start_pressed)
+	restart_button.pressed.connect(_on_restart_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
 	prev_level_button.pressed.connect(_on_prev_level_pressed)

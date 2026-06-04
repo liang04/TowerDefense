@@ -64,7 +64,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_upgrade_selected_tower()
 		elif event.keycode == KEY_X:
 			_sell_selected_tower()
-		elif event.keycode == KEY_R and GameManager.is_game_over:
+		elif event.keycode == KEY_R:
 			_restart_game()
 
 ## ---- 塔放置 ----
