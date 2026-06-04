@@ -52,7 +52,7 @@ size_flags_vertical = 3
 
 [node name="TopBar" type="HBoxContainer" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 12
 
 [node name="GoldLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
@@ -72,7 +72,7 @@ text = "关卡: 1/2 草地练习场"
 
 [node name="LevelSelectButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
-text = "切换关卡"
+text = "关卡"
 
 [node name="Spacer" type="Control" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
@@ -80,11 +80,28 @@ size_flags_horizontal = 3
 
 [node name="StartHint" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
-text = "右键/空格开始 | 左键放塔 | R 重开"
+text = "右键/空格开始 | R 重开"
 
 [node name="Spacer2" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="TowerBar" type="HBoxContainer" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ArrowTowerButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TowerBar"]
+layout_mode = 2
+text = "箭塔 45"
+
+[node name="CannonTowerButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TowerBar"]
+layout_mode = 2
+text = "炮塔 75"
+
+[node name="FrostTowerButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TowerBar"]
+layout_mode = 2
+text = "冰塔 60"
 
 [node name="InfoLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
