@@ -78,9 +78,13 @@ text = "关卡"
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="StartWaveButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+text = "开始"
+
 [node name="StartHint" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
-text = "右键/空格开始 | R 重开"
+text = "R 重开"
 
 [node name="Spacer2" type="Control" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2

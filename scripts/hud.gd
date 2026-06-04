@@ -24,6 +24,7 @@ var selected_tower_type: String = "basic"
 @onready var result_stats: Label = $Overlay/ResultPanel/ResultBox/ResultStats
 @onready var start_button: Button = $Overlay/StartPanel/StartBox/StartButton
 @onready var level_select_button: Button = $MarginContainer/VBoxContainer/TopBar/LevelSelectButton
+@onready var start_wave_button: Button = $MarginContainer/VBoxContainer/TopBar/StartWaveButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
 @onready var prev_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/PrevLevelButton
@@ -62,6 +63,7 @@ func _ready() -> void:
 
 	start_button.pressed.connect(_on_start_pressed)
 	level_select_button.pressed.connect(_on_level_select_pressed)
+	start_wave_button.pressed.connect(_on_start_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
 	prev_level_button.pressed.connect(_on_prev_level_pressed)
@@ -103,6 +105,7 @@ func _update_all() -> void:
 	wave_label.text = "波次: 0"
 	_update_level_text()
 	_update_selected_tower_text()
+	set_start_wave_available(true)
 	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可点按钮升级/出售"
 
 func _on_gold_changed(new_gold: int) -> void:
@@ -203,6 +206,10 @@ func _update_action_buttons() -> void:
 	upgrade_button.disabled = not can_upgrade or not GameManager.can_afford(upgrade_cost)
 	sell_button.text = "出售 %d" % int(_selected_tower_for_actions.call("get_sell_value"))
 	sell_button.disabled = false
+
+func set_start_wave_available(available: bool) -> void:
+	start_wave_button.disabled = not available
+	start_wave_button.text = "开始" if available else "进行中"
 
 func show_message(text: String, persistent: bool = false) -> void:
 	message_label.text = text

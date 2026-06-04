@@ -156,6 +156,7 @@ func _start_game() -> void:
 		return
 	hud.call("hide_overlay")
 	_game_started = true
+	hud.call("set_start_wave_available", false)
 	wave_spawner.call("start_next_wave")
 
 func _restart_game() -> void:
