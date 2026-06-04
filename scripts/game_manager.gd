@@ -257,6 +257,13 @@ func advance_to_next_level() -> bool:
 	reset_game()
 	return true
 
+func set_level(level_index: int) -> bool:
+	if level_index < 0 or level_index >= levels.size():
+		return false
+	current_level_index = level_index
+	reset_game()
+	return true
+
 func get_current_level() -> Dictionary:
 	if levels.is_empty():
 		return {}

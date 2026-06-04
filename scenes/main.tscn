@@ -70,6 +70,10 @@ text = "波次: 0"
 layout_mode = 2
 text = "关卡: 1/2 草地练习场"
 
+[node name="LevelSelectButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+text = "切换关卡"
+
 [node name="Spacer" type="Control" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -171,6 +175,56 @@ text = "继续"
 [node name="RestartPauseButton" type="Button" parent="HUD/Overlay/PausePanel/PauseBox"]
 layout_mode = 2
 text = "重新开始"
+
+[node name="LevelSelectPanel" type="PanelContainer" parent="HUD/Overlay"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -125.0
+offset_right = 250.0
+offset_bottom = 125.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LevelSelectBox" type="VBoxContainer" parent="HUD/Overlay/LevelSelectPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LevelSelectTitle" type="Label" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
+layout_mode = 2
+text = "关卡 1/2: 草地练习场"
+horizontal_alignment = 1
+
+[node name="LevelSelectDescription" type="Label" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
+layout_mode = 2
+text = "标准路线，适合学习基础建塔和升级。"
+horizontal_alignment = 1
+
+[node name="LevelSelectControls" type="HBoxContainer" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="PrevLevelButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls"]
+layout_mode = 2
+text = "上一关"
+
+[node name="NextSelectLevelButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls"]
+layout_mode = 2
+text = "下一关"
+
+[node name="ConfirmLevelButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
+layout_mode = 2
+text = "使用此关卡"
+
+[node name="CancelLevelButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
+layout_mode = 2
+text = "取消"
 
 [node name="ResultPanel" type="PanelContainer" parent="HUD/Overlay"]
 visible = false

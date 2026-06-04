@@ -18,14 +18,24 @@ var selected_tower_type: String = "basic"
 @onready var overlay: Control = $Overlay
 @onready var start_panel: PanelContainer = $Overlay/StartPanel
 @onready var pause_panel: PanelContainer = $Overlay/PausePanel
+@onready var level_select_panel: PanelContainer = $Overlay/LevelSelectPanel
 @onready var result_panel: PanelContainer = $Overlay/ResultPanel
 @onready var result_title: Label = $Overlay/ResultPanel/ResultBox/ResultTitle
 @onready var result_stats: Label = $Overlay/ResultPanel/ResultBox/ResultStats
 @onready var start_button: Button = $Overlay/StartPanel/StartBox/StartButton
+@onready var level_select_button: Button = $MarginContainer/VBoxContainer/TopBar/LevelSelectButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
+@onready var prev_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/PrevLevelButton
+@onready var next_select_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/NextSelectLevelButton
+@onready var confirm_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/ConfirmLevelButton
+@onready var cancel_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/CancelLevelButton
+@onready var level_select_title: Label = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectTitle
+@onready var level_select_description: Label = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectDescription
 @onready var next_level_button: Button = $Overlay/ResultPanel/ResultBox/NextLevelButton
 @onready var restart_result_button: Button = $Overlay/ResultPanel/ResultBox/RestartResultButton
+
+var _pending_level_index: int = 0
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -44,8 +54,13 @@ func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 
 	start_button.pressed.connect(_on_start_pressed)
+	level_select_button.pressed.connect(_on_level_select_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
+	prev_level_button.pressed.connect(_on_prev_level_pressed)
+	next_select_level_button.pressed.connect(_on_next_select_level_pressed)
+	confirm_level_button.pressed.connect(_on_confirm_level_pressed)
+	cancel_level_button.pressed.connect(_on_cancel_level_pressed)
 	next_level_button.pressed.connect(_on_next_level_pressed)
 	restart_result_button.pressed.connect(_on_restart_pressed)
 
@@ -55,7 +70,11 @@ func _ready() -> void:
 
 func _make_gameplay_hud_click_through(node: Node) -> void:
 	if node is Control:
-		(node as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var control := node as Control
+		if control is BaseButton:
+			control.mouse_filter = Control.MOUSE_FILTER_STOP
+		else:
+			control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for child in node.get_children():
 		_make_gameplay_hud_click_through(child)
 
@@ -147,18 +166,21 @@ func show_start_screen() -> void:
 	overlay.visible = true
 	start_panel.visible = true
 	pause_panel.visible = false
+	level_select_panel.visible = false
 	result_panel.visible = false
 
 func hide_overlay() -> void:
 	overlay.visible = false
 	start_panel.visible = false
 	pause_panel.visible = false
+	level_select_panel.visible = false
 	result_panel.visible = false
 
 func show_pause_screen() -> void:
 	overlay.visible = true
 	start_panel.visible = false
 	pause_panel.visible = true
+	level_select_panel.visible = false
 	result_panel.visible = false
 
 func hide_pause_screen() -> void:
@@ -169,6 +191,7 @@ func show_result_screen(won: bool) -> void:
 	overlay.visible = true
 	start_panel.visible = false
 	pause_panel.visible = false
+	level_select_panel.visible = false
 	result_panel.visible = true
 	result_title.text = "胜利" if won else "失败"
 	next_level_button.visible = won and GameManager.has_next_level()
@@ -185,6 +208,15 @@ func _on_start_pressed() -> void:
 	hide_overlay()
 	get_parent().call("_start_game")
 
+func _on_level_select_pressed() -> void:
+	_pending_level_index = GameManager.current_level_index
+	_update_level_select_text()
+	overlay.visible = true
+	start_panel.visible = false
+	pause_panel.visible = false
+	level_select_panel.visible = true
+	result_panel.visible = false
+
 func _on_resume_pressed() -> void:
 	get_tree().paused = false
 	hide_overlay()
@@ -197,3 +229,41 @@ func _on_next_level_pressed() -> void:
 	get_tree().paused = false
 	if GameManager.advance_to_next_level():
 		get_parent().call("_reload_scene_for_level")
+
+func _on_prev_level_pressed() -> void:
+	_pending_level_index = max(_pending_level_index - 1, 0)
+	_update_level_select_text()
+
+func _on_next_select_level_pressed() -> void:
+	_pending_level_index = min(_pending_level_index + 1, GameManager.get_level_count() - 1)
+	_update_level_select_text()
+
+func _on_confirm_level_pressed() -> void:
+	get_tree().paused = false
+	if GameManager.set_level(_pending_level_index):
+		get_parent().call("_reload_scene_for_level")
+
+func _on_cancel_level_pressed() -> void:
+	hide_overlay()
+
+func _update_level_select_text() -> void:
+	var levels: Array = GameManager.levels
+	if levels.is_empty():
+		level_select_title.text = "没有关卡"
+		level_select_description.text = ""
+		return
+
+	var level: Dictionary = levels[_pending_level_index]
+	level_select_title.text = "关卡 %d/%d: %s" % [
+		_pending_level_index + 1,
+		GameManager.get_level_count(),
+		String(level.get("name", "未命名关卡")),
+	]
+	level_select_description.text = "%s\n初始金币: %d | 初始生命: %d | 波次: %d" % [
+		String(level.get("description", "")),
+		int(level.get("starting_gold", 0)),
+		int(level.get("starting_lives", 0)),
+		(level.get("waves", []) as Array).size(),
+	]
+	prev_level_button.disabled = _pending_level_index <= 0
+	next_select_level_button.disabled = _pending_level_index >= GameManager.get_level_count() - 1

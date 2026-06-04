@@ -164,8 +164,17 @@ func _restart_game() -> void:
 	get_tree().reload_current_scene()
 
 func _reload_scene_for_level() -> void:
-	get_tree().paused = false
-	get_tree().reload_current_scene()
+	var tree := get_tree()
+	tree.paused = false
+	if tree.current_scene:
+		tree.reload_current_scene()
+		return
+
+	_game_started = false
+	_selected_tower = null
+	_selected_cell = Vector2i(-1, -1)
+	hud.call("hide_overlay")
+	queue_redraw()
 
 func _toggle_pause() -> void:
 	if GameManager.is_game_over or not _game_started:
