@@ -95,6 +95,11 @@ text = "重开"
 layout_mode = 2
 size_flags_vertical = 3
 
+[node name="WavePreviewLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "下一波 1/5：普通怪 x5 | 建议：箭塔"
+
 [node name="TowerBar" type="HBoxContainer" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12

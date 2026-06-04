@@ -22,6 +22,18 @@ const CELL_SIZE := 80       # 网格单元像素大小
 const GRID_COLS := 12       # 地图列数（宽）
 const GRID_ROWS := 8        # 地图行数（高）
 
+const ENEMY_TYPE_NAMES := {
+	"grunt": "普通怪",
+	"runner": "快速怪",
+	"tank": "重甲怪",
+}
+
+const ENEMY_TYPE_ADVICE := {
+	"grunt": "箭塔",
+	"runner": "箭塔/冰塔",
+	"tank": "炮塔",
+}
+
 var tower_configs: Dictionary = {
 	"arrow": {
 		"name": "箭塔",
@@ -277,6 +289,43 @@ func get_current_level_description() -> String:
 
 func get_current_level_waves() -> Array:
 	return get_current_level().get("waves", [])
+
+func get_wave_count() -> int:
+	return get_current_level_waves().size()
+
+func get_wave_preview_text(wave_num: int, prefix: String = "下一波") -> String:
+	var waves := get_current_level_waves()
+	if wave_num < 1 or wave_num > waves.size():
+		return "所有波次已完成"
+
+	var wave: Dictionary = waves[wave_num - 1]
+	var groups: Array = wave.get("groups", [])
+	var counts: Dictionary = {}
+	var order: Array[String] = []
+
+	for group in groups:
+		var enemy_type := String(group.get("type", "grunt"))
+		if not (enemy_type in counts):
+			counts[enemy_type] = 0
+			order.append(enemy_type)
+		counts[enemy_type] += int(group.get("count", 0))
+
+	var parts: Array[String] = []
+	var advice: Array[String] = []
+	for enemy_type in order:
+		var enemy_name := String(ENEMY_TYPE_NAMES.get(enemy_type, enemy_type))
+		parts.append("%s x%d" % [enemy_name, int(counts[enemy_type])])
+		var advice_text := String(ENEMY_TYPE_ADVICE.get(enemy_type, "箭塔"))
+		if not (advice_text in advice):
+			advice.append(advice_text)
+
+	return "%s %d/%d：%s | 建议：%s" % [
+		prefix,
+		wave_num,
+		waves.size(),
+		"、".join(parts),
+		"、".join(advice),
+	]
 
 func has_next_level() -> bool:
 	return current_level_index + 1 < levels.size()

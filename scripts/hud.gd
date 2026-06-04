@@ -13,6 +13,7 @@ var selected_tower_type: String = "basic"
 @onready var lives_label: Label = $MarginContainer/VBoxContainer/TopBar/LivesLabel
 @onready var wave_label: Label = $MarginContainer/VBoxContainer/TopBar/WaveLabel
 @onready var level_label: Label = $MarginContainer/VBoxContainer/TopBar/LevelLabel
+@onready var wave_preview_label: Label = $MarginContainer/VBoxContainer/WavePreviewLabel
 @onready var info_label: Label = $MarginContainer/VBoxContainer/InfoLabel
 @onready var message_label: Label = $MarginContainer/VBoxContainer/MessageLabel
 @onready var overlay: Control = $Overlay
@@ -106,7 +107,8 @@ func _make_gameplay_hud_click_through(node: Node) -> void:
 func _update_all() -> void:
 	gold_label.text = "金币: %d" % GameManager.gold
 	lives_label.text = "生命: %d" % GameManager.lives
-	wave_label.text = "波次: 0"
+	_update_wave_text(0)
+	_update_wave_preview(1, "下一波")
 	_update_level_text()
 	_update_selected_tower_text()
 	set_start_wave_available(true)
@@ -121,14 +123,23 @@ func _on_lives_changed(new_lives: int) -> void:
 	lives_label.text = "生命: %d" % new_lives
 
 func _on_wave_started(wave_num: int) -> void:
-	wave_label.text = "波次: %d" % wave_num
-	show_message("第 %d 波来袭！" % wave_num)
+	_update_wave_text(wave_num)
+	_update_wave_preview(wave_num, "本波")
+	show_message("第 %d/%d 波来袭！" % [wave_num, GameManager.get_wave_count()])
 
 func _on_wave_completed(wave_num: int) -> void:
-	show_message("第 %d 波已清理，下一波即将开始" % wave_num)
+	var next_wave := wave_num + 1
+	if next_wave <= GameManager.get_wave_count():
+		_update_wave_preview(next_wave, "下一波")
+		show_message("第 %d 波已清理，准备：%s" % [wave_num, GameManager.get_wave_preview_text(next_wave, "下一波")])
+	else:
+		wave_preview_label.text = "所有波次已清理"
+		show_message("第 %d 波已清理" % wave_num)
 
 func _on_wave_countdown(seconds_left: int) -> void:
-	show_message("下一波 %d 秒后开始" % seconds_left)
+	var next_wave := GameManager.current_wave + 1
+	_update_wave_preview(next_wave, "下一波")
+	show_message("%s，%d 秒后开始" % [GameManager.get_wave_preview_text(next_wave, "下一波"), seconds_left])
 
 func _on_game_over() -> void:
 	show_result_screen(false)
@@ -142,7 +153,8 @@ func _on_tower_selection_changed(_tower_type: String) -> void:
 
 func _on_level_changed(_level_index: int, _level_name: String) -> void:
 	_update_level_text()
-	wave_label.text = "波次: 0"
+	_update_wave_text(0)
+	_update_wave_preview(1, "下一波")
 	_update_selected_tower_text()
 	_selected_tower_for_actions = null
 	_update_action_buttons()
@@ -153,6 +165,12 @@ func _update_level_text() -> void:
 		GameManager.get_level_count(),
 		GameManager.get_current_level_name(),
 	]
+
+func _update_wave_text(wave_num: int) -> void:
+	wave_label.text = "波次: %d/%d" % [wave_num, GameManager.get_wave_count()]
+
+func _update_wave_preview(wave_num: int, prefix: String) -> void:
+	wave_preview_label.text = GameManager.get_wave_preview_text(wave_num, prefix)
 
 func _update_selected_tower_text() -> void:
 	_selected_tower_for_actions = null
