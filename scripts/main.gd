@@ -157,6 +157,7 @@ func _start_game() -> void:
 	hud.call("hide_overlay")
 	_game_started = true
 	hud.call("set_start_wave_available", false)
+	hud.call("set_pause_button_paused", false)
 	wave_spawner.call("start_next_wave")
 
 func _restart_game() -> void:
@@ -175,6 +176,8 @@ func _reload_scene_for_level() -> void:
 	_selected_tower = null
 	_selected_cell = Vector2i(-1, -1)
 	hud.call("hide_overlay")
+	hud.call("set_start_wave_available", true)
+	hud.call("set_pause_button_paused", false)
 	queue_redraw()
 
 func _toggle_pause() -> void:

@@ -82,6 +82,11 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "开始"
 
+[node name="PauseButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+disabled = true
+text = "暂停"
+
 [node name="RestartButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 text = "重开"

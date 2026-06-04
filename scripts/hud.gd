@@ -25,6 +25,7 @@ var selected_tower_type: String = "basic"
 @onready var start_button: Button = $Overlay/StartPanel/StartBox/StartButton
 @onready var level_select_button: Button = $MarginContainer/VBoxContainer/TopBar/LevelSelectButton
 @onready var start_wave_button: Button = $MarginContainer/VBoxContainer/TopBar/StartWaveButton
+@onready var pause_button: Button = $MarginContainer/VBoxContainer/TopBar/PauseButton
 @onready var restart_button: Button = $MarginContainer/VBoxContainer/TopBar/RestartButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
@@ -65,6 +66,7 @@ func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	level_select_button.pressed.connect(_on_level_select_pressed)
 	start_wave_button.pressed.connect(_on_start_pressed)
+	pause_button.pressed.connect(_on_pause_pressed)
 	restart_button.pressed.connect(_on_restart_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
@@ -212,6 +214,10 @@ func _update_action_buttons() -> void:
 func set_start_wave_available(available: bool) -> void:
 	start_wave_button.disabled = not available
 	start_wave_button.text = "开始" if available else "进行中"
+	pause_button.disabled = available
+
+func set_pause_button_paused(paused: bool) -> void:
+	pause_button.text = "继续" if paused else "暂停"
 
 func show_message(text: String, persistent: bool = false) -> void:
 	message_label.text = text
@@ -247,10 +253,12 @@ func show_pause_screen() -> void:
 	pause_panel.visible = true
 	level_select_panel.visible = false
 	result_panel.visible = false
+	set_pause_button_paused(true)
 
 func hide_pause_screen() -> void:
 	if pause_panel.visible:
 		hide_overlay()
+	set_pause_button_paused(false)
 
 func show_result_screen(won: bool) -> void:
 	overlay.visible = true
@@ -258,6 +266,8 @@ func show_result_screen(won: bool) -> void:
 	pause_panel.visible = false
 	level_select_panel.visible = false
 	result_panel.visible = true
+	pause_button.disabled = true
+	set_pause_button_paused(false)
 	result_title.text = "胜利" if won else "失败"
 	next_level_button.visible = won and GameManager.has_next_level()
 	result_stats.text = "关卡: %s\n到达波次: %d\n击杀敌人: %d\n漏掉敌人: %d\n剩余生命: %d\n剩余金币: %d" % [
@@ -282,6 +292,9 @@ func _on_upgrade_pressed() -> void:
 func _on_sell_pressed() -> void:
 	get_parent().call("_sell_selected_tower")
 
+func _on_pause_pressed() -> void:
+	get_parent().call("_toggle_pause")
+
 func _on_level_select_pressed() -> void:
 	_pending_level_index = GameManager.current_level_index
 	_update_level_select_text()
@@ -294,6 +307,7 @@ func _on_level_select_pressed() -> void:
 func _on_resume_pressed() -> void:
 	get_tree().paused = false
 	hide_overlay()
+	set_pause_button_paused(false)
 
 func _on_restart_pressed() -> void:
 	get_tree().paused = false
