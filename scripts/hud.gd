@@ -37,9 +37,12 @@ var selected_tower_type: String = "basic"
 @onready var arrow_tower_button: Button = $MarginContainer/VBoxContainer/TowerBar/ArrowTowerButton
 @onready var cannon_tower_button: Button = $MarginContainer/VBoxContainer/TowerBar/CannonTowerButton
 @onready var frost_tower_button: Button = $MarginContainer/VBoxContainer/TowerBar/FrostTowerButton
+@onready var upgrade_button: Button = $MarginContainer/VBoxContainer/ActionBar/UpgradeButton
+@onready var sell_button: Button = $MarginContainer/VBoxContainer/ActionBar/SellButton
 
 var _pending_level_index: int = 0
 var _tower_buttons: Dictionary = {}
+var _selected_tower_for_actions: Node = null
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -70,6 +73,8 @@ func _ready() -> void:
 	arrow_tower_button.pressed.connect(_on_tower_button_pressed.bind("arrow"))
 	cannon_tower_button.pressed.connect(_on_tower_button_pressed.bind("cannon"))
 	frost_tower_button.pressed.connect(_on_tower_button_pressed.bind("frost"))
+	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	sell_button.pressed.connect(_on_sell_pressed)
 	_tower_buttons = {
 		"arrow": arrow_tower_button,
 		"cannon": cannon_tower_button,
@@ -98,11 +103,12 @@ func _update_all() -> void:
 	wave_label.text = "波次: 0"
 	_update_level_text()
 	_update_selected_tower_text()
-	message_label.text = "点击下方按钮或 1/2/3 选塔，左键建造或选中塔，U 升级，X 出售"
+	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可点按钮升级/出售"
 
 func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = "金币: %d" % new_gold
 	_update_tower_buttons()
+	_update_action_buttons()
 
 func _on_lives_changed(new_lives: int) -> void:
 	lives_label.text = "生命: %d" % new_lives
@@ -131,6 +137,8 @@ func _on_level_changed(_level_index: int, _level_name: String) -> void:
 	_update_level_text()
 	wave_label.text = "波次: 0"
 	_update_selected_tower_text()
+	_selected_tower_for_actions = null
+	_update_action_buttons()
 
 func _update_level_text() -> void:
 	level_label.text = "关卡: %d/%d %s" % [
@@ -140,6 +148,7 @@ func _update_level_text() -> void:
 	]
 
 func _update_selected_tower_text() -> void:
+	_selected_tower_for_actions = null
 	var config := GameManager.get_tower_config(GameManager.selected_tower_type)
 	info_label.text = "当前: %s | 费用: %d | %s" % [
 		String(config["name"]),
@@ -147,6 +156,7 @@ func _update_selected_tower_text() -> void:
 		String(config["description"]),
 	]
 	_update_tower_buttons()
+	_update_action_buttons()
 
 func _update_tower_buttons() -> void:
 	if _tower_buttons.is_empty():
@@ -166,6 +176,7 @@ func show_tower_details(tower: Node) -> void:
 		_update_selected_tower_text()
 		return
 
+	_selected_tower_for_actions = tower
 	var upgrade_text := "满级"
 	if tower.call("can_upgrade"):
 		upgrade_text = "升级: %d 金币" % int(tower.call("get_upgrade_cost"))
@@ -175,6 +186,23 @@ func show_tower_details(tower: Node) -> void:
 		upgrade_text,
 		int(tower.call("get_sell_value")),
 	]
+	_update_action_buttons()
+
+func _update_action_buttons() -> void:
+	var has_tower := _selected_tower_for_actions != null and is_instance_valid(_selected_tower_for_actions)
+	if not has_tower:
+		upgrade_button.text = "升级"
+		upgrade_button.disabled = true
+		sell_button.text = "出售"
+		sell_button.disabled = true
+		return
+
+	var can_upgrade: bool = _selected_tower_for_actions.call("can_upgrade")
+	var upgrade_cost := int(_selected_tower_for_actions.call("get_upgrade_cost"))
+	upgrade_button.text = "升级 %d" % upgrade_cost if can_upgrade else "已满级"
+	upgrade_button.disabled = not can_upgrade or not GameManager.can_afford(upgrade_cost)
+	sell_button.text = "出售 %d" % int(_selected_tower_for_actions.call("get_sell_value"))
+	sell_button.disabled = false
 
 func show_message(text: String, persistent: bool = false) -> void:
 	message_label.text = text
@@ -238,6 +266,12 @@ func _on_start_pressed() -> void:
 
 func _on_tower_button_pressed(tower_type: String) -> void:
 	get_parent().call("_select_tower_type", tower_type)
+
+func _on_upgrade_pressed() -> void:
+	get_parent().call("_upgrade_selected_tower")
+
+func _on_sell_pressed() -> void:
+	get_parent().call("_sell_selected_tower")
 
 func _on_level_select_pressed() -> void:
 	_pending_level_index = GameManager.current_level_index
