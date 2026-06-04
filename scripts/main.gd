@@ -19,6 +19,9 @@ var _hover_cell: Vector2i = Vector2i(-1, -1)  # 鼠标悬停的格子
 var _game_started: bool = false
 var _selected_tower: Node = null
 var _selected_cell: Vector2i = Vector2i(-1, -1)
+var _tutorial_active: bool = true
+var _tutorial_first_tower_built: bool = false
+var _recommended_cells: Array[Vector2i] = []
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -28,11 +31,50 @@ func _ready() -> void:
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.life_lost.connect(_on_life_lost)
 	wave_spawner.connect("all_waves_completed", _on_all_waves_completed)
+	_init_tutorial()
 	queue_redraw()
 
 func _set_gameplay_nodes_pausable() -> void:
 	for node in [towers_container, enemies_container, projectiles_container, effects_container, wave_spawner]:
 		node.process_mode = Node.PROCESS_MODE_PAUSABLE
+
+func _init_tutorial() -> void:
+	_tutorial_active = true
+	_tutorial_first_tower_built = false
+	_recommended_cells = _find_recommended_build_cells()
+	hud.call("show_message", "先在高亮绿色格子建一座箭塔，再点击开始", true)
+
+func _find_recommended_build_cells() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var candidates: Array[Vector2i] = []
+	var seen: Dictionary = {}
+	var directions := [
+		Vector2i(1, 0),
+		Vector2i(-1, 0),
+		Vector2i(0, 1),
+		Vector2i(0, -1),
+	]
+
+	for path_cell in GameManager.path_cells.keys():
+		for direction in directions:
+			var cell: Vector2i = path_cell + direction
+			if cell in seen or not GameManager.can_place_tower(cell.x, cell.y):
+				continue
+			seen[cell] = true
+			candidates.append(cell)
+
+	var map_center := Vector2(GameManager.GRID_COLS - 1, GameManager.GRID_ROWS - 1) * 0.5
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var distance_a := Vector2(a).distance_to(map_center)
+		var distance_b := Vector2(b).distance_to(map_center)
+		return distance_a < distance_b
+	)
+
+	for cell in candidates:
+		result.append(cell)
+		if result.size() >= 3:
+			break
+	return result
 
 func _process(_delta: float) -> void:
 	# 更新悬停格子
@@ -92,6 +134,7 @@ func _try_place_tower() -> void:
 		towers_container.add_child(tower)
 		GameManager.register_tower(col, row, tower)
 		_select_existing_tower(tower, Vector2i(col, row))
+		_on_tutorial_tower_built()
 		queue_redraw()
 	else:
 		hud.call("show_message", _get_place_error_message(col, row))
@@ -161,11 +204,13 @@ func _sell_selected_tower() -> void:
 func _start_game() -> void:
 	if _game_started or GameManager.is_game_over:
 		return
+	_tutorial_active = false
 	hud.call("hide_overlay")
 	_game_started = true
 	hud.call("set_start_wave_available", false)
 	hud.call("set_pause_button_paused", false)
 	wave_spawner.call("start_next_wave")
+	queue_redraw()
 
 func _restart_game() -> void:
 	get_tree().paused = false
@@ -182,9 +227,17 @@ func _reload_scene_for_level() -> void:
 	_game_started = false
 	_selected_tower = null
 	_selected_cell = Vector2i(-1, -1)
+	_init_tutorial()
 	hud.call("hide_overlay")
 	hud.call("set_start_wave_available", true)
 	hud.call("set_pause_button_paused", false)
+	queue_redraw()
+
+func _on_tutorial_tower_built() -> void:
+	if not _tutorial_active or _tutorial_first_tower_built:
+		return
+	_tutorial_first_tower_built = true
+	hud.call("show_message", "很好。可以再补一座塔，或点击顶部“开始”迎战第一波", true)
 	queue_redraw()
 
 func _toggle_pause() -> void:
@@ -202,6 +255,7 @@ func _toggle_pause() -> void:
 func _draw() -> void:
 	_draw_background()
 	_draw_buildable_cells()
+	_draw_tutorial_recommendations()
 	_draw_grid()
 	_draw_path()
 	_draw_hover()
@@ -249,6 +303,25 @@ func _draw_buildable_cells() -> void:
 			)
 			draw_rect(rect, buildable_color)
 			draw_rect(rect, Color(0.37, 0.85, 0.42, 0.28), false, 1.0)
+
+func _draw_tutorial_recommendations() -> void:
+	if not _tutorial_active or _tutorial_first_tower_built:
+		return
+
+	for cell in _recommended_cells:
+		if not GameManager.can_place_tower(cell.x, cell.y):
+			continue
+
+		var center := GameManager.grid_to_pixel(cell.x, cell.y)
+		var rect := Rect2(
+			cell.x * GameManager.CELL_SIZE + 6,
+			cell.y * GameManager.CELL_SIZE + 6,
+			GameManager.CELL_SIZE - 12,
+			GameManager.CELL_SIZE - 12
+		)
+		draw_rect(rect, Color(0.35, 1.0, 0.32, 0.3))
+		draw_rect(rect, Color(0.9, 1.0, 0.35, 0.9), false, 3.0)
+		draw_circle(center, 6.0, Color(1.0, 0.95, 0.25, 0.95))
 
 func _draw_grid() -> void:
 	# 绘制网格线
