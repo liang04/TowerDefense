@@ -8,6 +8,8 @@ var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 
 ## ---- 节点引用 ----
 @onready var towers_container: Node2D = $Towers
+@onready var enemies_container: Node2D = $Enemies
+@onready var projectiles_container: Node2D = $Projectiles
 @onready var wave_spawner: Node = $WaveSpawner
 @onready var hud: Node = $HUD
 @onready var effects_container: Node2D = $Effects
@@ -21,11 +23,16 @@ var _selected_cell: Vector2i = Vector2i(-1, -1)
 ## ---- 生命周期 ----
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_set_gameplay_nodes_pausable()
 	# 连接信号
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.life_lost.connect(_on_life_lost)
 	wave_spawner.connect("all_waves_completed", _on_all_waves_completed)
 	queue_redraw()
+
+func _set_gameplay_nodes_pausable() -> void:
+	for node in [towers_container, enemies_container, projectiles_container, effects_container, wave_spawner]:
+		node.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 func _process(_delta: float) -> void:
 	# 更新悬停格子
