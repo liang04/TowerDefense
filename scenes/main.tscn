@@ -66,6 +66,10 @@ text = "生命: 20"
 layout_mode = 2
 text = "波次: 0"
 
+[node name="LevelLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
+layout_mode = 2
+text = "关卡: 1/2 草地练习场"
+
 [node name="Spacer" type="Control" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -196,6 +200,10 @@ horizontal_alignment = 1
 layout_mode = 2
 text = "统计"
 horizontal_alignment = 1
+
+[node name="NextLevelButton" type="Button" parent="HUD/Overlay/ResultPanel/ResultBox"]
+layout_mode = 2
+text = "下一关"
 
 [node name="RestartResultButton" type="Button" parent="HUD/Overlay/ResultPanel/ResultBox"]
 layout_mode = 2

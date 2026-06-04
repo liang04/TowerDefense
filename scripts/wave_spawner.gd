@@ -5,33 +5,7 @@ extends Node
 ## ---- 信号 ----
 signal all_waves_completed
 
-## ---- 波次配置 ----
-## 后续规模变大时可改为 Resource 或 JSON 加载
-## groups 中每组：[数量, 生成间隔, 类型, 血量, 速度, 奖励]
 const COUNTDOWN_SECONDS := 3
-
-var waves: Array[Dictionary] = [
-	{"groups": [
-		{"count": 5, "interval": 0.9, "type": "grunt", "hp": 30, "speed": 118.0, "reward": 10, "color": Color(0.25, 0.8, 0.25)},
-	]},
-	{"groups": [
-		{"count": 6, "interval": 0.75, "type": "grunt", "hp": 42, "speed": 122.0, "reward": 10, "color": Color(0.25, 0.8, 0.25)},
-		{"count": 3, "interval": 0.55, "type": "runner", "hp": 24, "speed": 175.0, "reward": 12, "color": Color(0.95, 0.9, 0.25)},
-	]},
-	{"groups": [
-		{"count": 8, "interval": 0.7, "type": "runner", "hp": 32, "speed": 185.0, "reward": 13, "color": Color(0.95, 0.9, 0.25)},
-		{"count": 3, "interval": 1.0, "type": "tank", "hp": 120, "speed": 80.0, "reward": 22, "color": Color(0.62, 0.55, 0.48)},
-	]},
-	{"groups": [
-		{"count": 12, "interval": 0.45, "type": "grunt", "hp": 58, "speed": 130.0, "reward": 11, "color": Color(0.25, 0.8, 0.25)},
-		{"count": 4, "interval": 0.8, "type": "tank", "hp": 150, "speed": 85.0, "reward": 24, "color": Color(0.62, 0.55, 0.48)},
-	]},
-	{"groups": [
-		{"count": 8, "interval": 0.5, "type": "runner", "hp": 44, "speed": 195.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
-		{"count": 6, "interval": 0.8, "type": "tank", "hp": 190, "speed": 90.0, "reward": 28, "color": Color(0.62, 0.55, 0.48)},
-		{"count": 8, "interval": 0.45, "type": "grunt", "hp": 75, "speed": 140.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
-	]},
-]
 
 ## ---- 预加载 ----
 var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
@@ -60,6 +34,7 @@ func start_next_wave() -> void:
 	if _is_spawning or _is_waiting_to_spawn or GameManager.is_game_over or _is_finished:
 		return
 
+	var waves := GameManager.get_current_level_waves()
 	if _current_wave >= waves.size():
 		_is_finished = true
 		all_waves_completed.emit()
@@ -118,6 +93,7 @@ func _on_spawn_timer_timeout() -> void:
 		_spawned_count = 0
 		_current_group += 1
 
+		var waves := GameManager.get_current_level_waves()
 		var groups: Array = waves[_current_wave]["groups"]
 		if _current_group >= groups.size():
 			spawn_timer.stop()
@@ -127,6 +103,7 @@ func _on_spawn_timer_timeout() -> void:
 			spawn_timer.wait_time = next_data["interval"]
 
 func _get_current_spawn_data() -> Dictionary:
+	var waves := GameManager.get_current_level_waves()
 	var groups: Array = waves[_current_wave]["groups"]
 	return groups[_current_group]
 

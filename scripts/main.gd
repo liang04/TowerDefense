@@ -163,6 +163,10 @@ func _restart_game() -> void:
 	GameManager.reset_game()
 	get_tree().reload_current_scene()
 
+func _reload_scene_for_level() -> void:
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
 func _toggle_pause() -> void:
 	if GameManager.is_game_over or not _game_started:
 		return
@@ -184,12 +188,14 @@ func _draw() -> void:
 
 func _draw_background() -> void:
 	var map_size := Vector2(GameManager.GRID_COLS * GameManager.CELL_SIZE, GameManager.GRID_ROWS * GameManager.CELL_SIZE)
-	draw_rect(Rect2(Vector2.ZERO, map_size), Color(0.11, 0.2, 0.13))
+	var background_color := GameManager.get_level_background_color()
+	draw_rect(Rect2(Vector2.ZERO, map_size), background_color)
 
 	for row in range(GameManager.GRID_ROWS):
 		for col in range(GameManager.GRID_COLS):
 			var cell_origin := Vector2(col * GameManager.CELL_SIZE, row * GameManager.CELL_SIZE)
-			var tint := Color(0.13, 0.24, 0.15, 0.45) if (col + row) % 2 == 0 else Color(0.1, 0.18, 0.12, 0.35)
+			var tint := background_color.lightened(0.08) if (col + row) % 2 == 0 else background_color.darkened(0.06)
+			tint.a = 0.45
 			draw_rect(Rect2(cell_origin, Vector2(GameManager.CELL_SIZE, GameManager.CELL_SIZE)), tint)
 
 	# 固定装饰点，避免运行时随机导致地图闪烁。
@@ -208,6 +214,7 @@ func _draw_background() -> void:
 			draw_circle(pos + Vector2(5, 4), 4.0, Color(0.1, 0.1, 0.09, 0.55))
 
 func _draw_buildable_cells() -> void:
+	var buildable_color := GameManager.get_level_buildable_color()
 	for row in range(GameManager.GRID_ROWS):
 		for col in range(GameManager.GRID_COLS):
 			var cell := Vector2i(col, row)
@@ -220,7 +227,7 @@ func _draw_buildable_cells() -> void:
 				GameManager.CELL_SIZE - 16,
 				GameManager.CELL_SIZE - 16
 			)
-			draw_rect(rect, Color(0.18, 0.55, 0.24, 0.22))
+			draw_rect(rect, buildable_color)
 			draw_rect(rect, Color(0.37, 0.85, 0.42, 0.28), false, 1.0)
 
 func _draw_grid() -> void:
@@ -235,6 +242,7 @@ func _draw_grid() -> void:
 				  Color(0.25, 0.25, 0.25, 0.3), 1.0)
 
 func _draw_path() -> void:
+	var path_color := GameManager.get_level_path_color()
 	# 绘制路径格子
 	for cell in GameManager.path_cells:
 		var rect := Rect2(
@@ -243,8 +251,8 @@ func _draw_path() -> void:
 			GameManager.CELL_SIZE,
 			GameManager.CELL_SIZE
 		)
-		draw_rect(rect, Color(0.35, 0.28, 0.2))  # 泥土色路径
-		draw_rect(rect.grow(-3), Color(0.42, 0.34, 0.23, 0.65), false, 2.0)
+		draw_rect(rect, path_color)
+		draw_rect(rect.grow(-3), path_color.lightened(0.16), false, 2.0)
 
 	# 绘制路径点连线（辅助线）
 	if GameManager.path_points.size() > 1:

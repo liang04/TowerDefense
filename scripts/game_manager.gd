@@ -2,6 +2,8 @@
 ## 管理：金币、生命、塔放置网格、游戏状态
 extends Node
 
+var LevelData = preload("res://scripts/level_data.gd")
+
 ## ---- 信号 ----
 signal gold_changed(new_gold: int)
 signal lives_changed(new_lives: int)
@@ -13,15 +15,12 @@ signal wave_completed(wave_num: int)
 signal wave_countdown(seconds_left: int)
 signal tower_selection_changed(tower_type: String)
 signal sfx_requested(sfx_name: String)
+signal level_changed(level_index: int, level_name: String)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
 const GRID_COLS := 12       # 地图列数（宽）
 const GRID_ROWS := 8        # 地图行数（高）
-
-## ---- 初始值 ----
-const STARTING_GOLD := 160
-const STARTING_LIVES := 20
 
 var tower_configs: Dictionary = {
 	"arrow": {
@@ -60,8 +59,10 @@ var tower_configs: Dictionary = {
 }
 
 ## ---- 状态 ----
-var gold: int = STARTING_GOLD
-var lives: int = STARTING_LIVES
+var levels: Array[Dictionary] = []
+var current_level_index: int = 0
+var gold: int = 160
+var lives: int = 20
 var is_game_over: bool = false
 var selected_tower_type: String = "arrow"
 var current_wave: int = 0
@@ -80,6 +81,11 @@ var path_points: PackedVector2Array = []
 
 ## ---- 初始化 ----
 func _ready() -> void:
+	levels = LevelData.get_levels()
+	if levels.is_empty():
+		push_error("No level data configured.")
+		return
+	_apply_level_settings()
 	_init_path()
 
 ## 初始化路径（坐标为网格 列,行）
@@ -87,18 +93,7 @@ func _init_path() -> void:
 	path_cells.clear()
 	path_points.clear()
 
-	# 路径网格坐标序列：从左上蜿蜒到右下
-	var path_grid: Array[Vector2i] = [
-		Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1),
-		Vector2i(3, 2), Vector2i(3, 3),
-		Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(7, 3),
-		Vector2i(7, 2), Vector2i(7, 1),
-		Vector2i(8, 1), Vector2i(9, 1),
-		Vector2i(9, 2), Vector2i(9, 3), Vector2i(9, 4), Vector2i(9, 5),
-		Vector2i(8, 5), Vector2i(7, 5), Vector2i(6, 5),
-		Vector2i(6, 6), Vector2i(6, 7),
-		Vector2i(7, 7), Vector2i(8, 7), Vector2i(9, 7), Vector2i(10, 7), Vector2i(11, 7),
-	]
+	var path_grid: Array = get_current_level().get("path", [])
 
 	# 注册路径格子为不可放置
 	for cell in path_grid:
@@ -110,6 +105,11 @@ func _init_path() -> void:
 			cell.x * CELL_SIZE + CELL_SIZE * 0.5,
 			cell.y * CELL_SIZE + CELL_SIZE * 0.5
 		))
+
+func _apply_level_settings() -> void:
+	var level := get_current_level()
+	gold = int(level.get("starting_gold", 160))
+	lives = int(level.get("starting_lives", 20))
 
 ## ---- 公共方法 ----
 
@@ -236,8 +236,7 @@ func request_sfx(sfx_name: String) -> void:
 	sfx_requested.emit(sfx_name)
 
 func reset_game() -> void:
-	gold = STARTING_GOLD
-	lives = STARTING_LIVES
+	_apply_level_settings()
 	is_game_over = false
 	current_wave = 0
 	enemies_killed = 0
@@ -249,3 +248,43 @@ func reset_game() -> void:
 	gold_changed.emit(gold)
 	lives_changed.emit(lives)
 	tower_selection_changed.emit(selected_tower_type)
+	level_changed.emit(current_level_index, get_current_level_name())
+
+func advance_to_next_level() -> bool:
+	if current_level_index + 1 >= levels.size():
+		return false
+	current_level_index += 1
+	reset_game()
+	return true
+
+func get_current_level() -> Dictionary:
+	if levels.is_empty():
+		return {}
+	return levels[current_level_index]
+
+func get_current_level_name() -> String:
+	return String(get_current_level().get("name", "未命名关卡"))
+
+func get_current_level_description() -> String:
+	return String(get_current_level().get("description", ""))
+
+func get_current_level_waves() -> Array:
+	return get_current_level().get("waves", [])
+
+func has_next_level() -> bool:
+	return current_level_index + 1 < levels.size()
+
+func get_level_count() -> int:
+	return levels.size()
+
+func get_level_background_color() -> Color:
+	var value = get_current_level().get("background", Color(0.11, 0.2, 0.13))
+	return value if value is Color else Color(0.11, 0.2, 0.13)
+
+func get_level_buildable_color() -> Color:
+	var value = get_current_level().get("buildable_color", Color(0.18, 0.55, 0.24, 0.22))
+	return value if value is Color else Color(0.18, 0.55, 0.24, 0.22)
+
+func get_level_path_color() -> Color:
+	var value = get_current_level().get("path_color", Color(0.35, 0.28, 0.2))
+	return value if value is Color else Color(0.35, 0.28, 0.2)

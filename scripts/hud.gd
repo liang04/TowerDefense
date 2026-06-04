@@ -12,6 +12,7 @@ var selected_tower_type: String = "basic"
 @onready var gold_label: Label = $MarginContainer/VBoxContainer/TopBar/GoldLabel
 @onready var lives_label: Label = $MarginContainer/VBoxContainer/TopBar/LivesLabel
 @onready var wave_label: Label = $MarginContainer/VBoxContainer/TopBar/WaveLabel
+@onready var level_label: Label = $MarginContainer/VBoxContainer/TopBar/LevelLabel
 @onready var info_label: Label = $MarginContainer/VBoxContainer/InfoLabel
 @onready var message_label: Label = $MarginContainer/VBoxContainer/MessageLabel
 @onready var overlay: Control = $Overlay
@@ -23,6 +24,7 @@ var selected_tower_type: String = "basic"
 @onready var start_button: Button = $Overlay/StartPanel/StartBox/StartButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
+@onready var next_level_button: Button = $Overlay/ResultPanel/ResultBox/NextLevelButton
 @onready var restart_result_button: Button = $Overlay/ResultPanel/ResultBox/RestartResultButton
 
 ## ---- 生命周期 ----
@@ -39,10 +41,12 @@ func _ready() -> void:
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.game_won.connect(_on_game_won)
 	GameManager.tower_selection_changed.connect(_on_tower_selection_changed)
+	GameManager.level_changed.connect(_on_level_changed)
 
 	start_button.pressed.connect(_on_start_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
+	next_level_button.pressed.connect(_on_next_level_pressed)
 	restart_result_button.pressed.connect(_on_restart_pressed)
 
 	# 初始化显示
@@ -61,6 +65,7 @@ func _update_all() -> void:
 	gold_label.text = "金币: %d" % GameManager.gold
 	lives_label.text = "生命: %d" % GameManager.lives
 	wave_label.text = "波次: 0"
+	_update_level_text()
 	_update_selected_tower_text()
 	message_label.text = "1/2/3 选塔，左键建造或选中塔，U 升级，X 出售，右键/空格开始"
 
@@ -88,6 +93,18 @@ func _on_game_won() -> void:
 
 func _on_tower_selection_changed(_tower_type: String) -> void:
 	_update_selected_tower_text()
+
+func _on_level_changed(_level_index: int, _level_name: String) -> void:
+	_update_level_text()
+	wave_label.text = "波次: 0"
+	_update_selected_tower_text()
+
+func _update_level_text() -> void:
+	level_label.text = "关卡: %d/%d %s" % [
+		GameManager.current_level_index + 1,
+		GameManager.get_level_count(),
+		GameManager.get_current_level_name(),
+	]
 
 func _update_selected_tower_text() -> void:
 	var config := GameManager.get_tower_config(GameManager.selected_tower_type)
@@ -154,7 +171,9 @@ func show_result_screen(won: bool) -> void:
 	pause_panel.visible = false
 	result_panel.visible = true
 	result_title.text = "胜利" if won else "失败"
-	result_stats.text = "到达波次: %d\n击杀敌人: %d\n漏掉敌人: %d\n剩余生命: %d\n剩余金币: %d" % [
+	next_level_button.visible = won and GameManager.has_next_level()
+	result_stats.text = "关卡: %s\n到达波次: %d\n击杀敌人: %d\n漏掉敌人: %d\n剩余生命: %d\n剩余金币: %d" % [
+		GameManager.get_current_level_name(),
 		GameManager.current_wave,
 		GameManager.enemies_killed,
 		GameManager.enemies_leaked,
@@ -173,3 +192,8 @@ func _on_resume_pressed() -> void:
 func _on_restart_pressed() -> void:
 	get_tree().paused = false
 	get_parent().call("_restart_game")
+
+func _on_next_level_pressed() -> void:
+	get_tree().paused = false
+	if GameManager.advance_to_next_level():
+		get_parent().call("_reload_scene_for_level")

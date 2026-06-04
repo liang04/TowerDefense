@@ -1,0 +1,81 @@
+extends RefCounted
+
+static func get_levels() -> Array[Dictionary]:
+	return [
+		{
+			"name": "草地练习场",
+			"description": "标准路线，适合学习基础建塔和升级。",
+			"starting_gold": 160,
+			"starting_lives": 20,
+			"background": Color(0.11, 0.2, 0.13),
+			"buildable_color": Color(0.18, 0.55, 0.24, 0.22),
+			"path_color": Color(0.35, 0.28, 0.2),
+			"path": [
+				Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1),
+				Vector2i(3, 2), Vector2i(3, 3),
+				Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(7, 3),
+				Vector2i(7, 2), Vector2i(7, 1),
+				Vector2i(8, 1), Vector2i(9, 1),
+				Vector2i(9, 2), Vector2i(9, 3), Vector2i(9, 4), Vector2i(9, 5),
+				Vector2i(8, 5), Vector2i(7, 5), Vector2i(6, 5),
+				Vector2i(6, 6), Vector2i(6, 7),
+				Vector2i(7, 7), Vector2i(8, 7), Vector2i(9, 7), Vector2i(10, 7), Vector2i(11, 7),
+			],
+			"waves": [
+				{"groups": [
+					{"count": 5, "interval": 0.9, "type": "grunt", "hp": 30, "speed": 118.0, "reward": 10, "color": Color(0.25, 0.8, 0.25)},
+				]},
+				{"groups": [
+					{"count": 6, "interval": 0.75, "type": "grunt", "hp": 42, "speed": 122.0, "reward": 10, "color": Color(0.25, 0.8, 0.25)},
+					{"count": 3, "interval": 0.55, "type": "runner", "hp": 24, "speed": 175.0, "reward": 12, "color": Color(0.95, 0.9, 0.25)},
+				]},
+				{"groups": [
+					{"count": 8, "interval": 0.7, "type": "runner", "hp": 32, "speed": 185.0, "reward": 13, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 3, "interval": 1.0, "type": "tank", "hp": 120, "speed": 80.0, "reward": 22, "color": Color(0.62, 0.55, 0.48)},
+				]},
+				{"groups": [
+					{"count": 12, "interval": 0.45, "type": "grunt", "hp": 58, "speed": 130.0, "reward": 11, "color": Color(0.25, 0.8, 0.25)},
+					{"count": 4, "interval": 0.8, "type": "tank", "hp": 150, "speed": 85.0, "reward": 24, "color": Color(0.62, 0.55, 0.48)},
+				]},
+				{"groups": [
+					{"count": 8, "interval": 0.5, "type": "runner", "hp": 44, "speed": 195.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 6, "interval": 0.8, "type": "tank", "hp": 190, "speed": 90.0, "reward": 28, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 8, "interval": 0.45, "type": "grunt", "hp": 75, "speed": 140.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
+				]},
+			],
+		},
+		{
+			"name": "峡谷回廊",
+			"description": "更长路线，敌人分批更多，适合练习补塔和升级。",
+			"starting_gold": 190,
+			"starting_lives": 18,
+			"background": Color(0.13, 0.17, 0.18),
+			"buildable_color": Color(0.18, 0.48, 0.4, 0.24),
+			"path_color": Color(0.38, 0.31, 0.24),
+			"path": [
+				Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0),
+				Vector2i(4, 1), Vector2i(4, 2), Vector2i(3, 2), Vector2i(2, 2), Vector2i(1, 2),
+				Vector2i(1, 3), Vector2i(1, 4), Vector2i(2, 4), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4), Vector2i(6, 4),
+				Vector2i(6, 3), Vector2i(6, 2), Vector2i(7, 2), Vector2i(8, 2), Vector2i(9, 2), Vector2i(10, 2),
+				Vector2i(10, 3), Vector2i(10, 4), Vector2i(9, 4), Vector2i(8, 4),
+				Vector2i(8, 5), Vector2i(8, 6), Vector2i(9, 6), Vector2i(10, 6), Vector2i(11, 6),
+			],
+			"waves": [
+				{"groups": [
+					{"count": 8, "interval": 0.65, "type": "grunt", "hp": 40, "speed": 130.0, "reward": 10, "color": Color(0.25, 0.8, 0.25)},
+				]},
+				{"groups": [
+					{"count": 7, "interval": 0.55, "type": "runner", "hp": 30, "speed": 190.0, "reward": 12, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 5, "interval": 0.75, "type": "grunt", "hp": 58, "speed": 135.0, "reward": 12, "color": Color(0.25, 0.8, 0.25)},
+				]},
+				{"groups": [
+					{"count": 6, "interval": 0.9, "type": "tank", "hp": 155, "speed": 90.0, "reward": 24, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 8, "interval": 0.45, "type": "runner", "hp": 42, "speed": 205.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
+				]},
+				{"groups": [
+					{"count": 14, "interval": 0.38, "type": "grunt", "hp": 76, "speed": 145.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
+					{"count": 7, "interval": 0.7, "type": "tank", "hp": 210, "speed": 92.0, "reward": 30, "color": Color(0.62, 0.55, 0.48)},
+				]},
+			],
+		},
+	]
