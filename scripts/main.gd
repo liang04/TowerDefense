@@ -272,20 +272,43 @@ func _draw_background() -> void:
 			tint.a = 0.45
 			draw_rect(Rect2(cell_origin, Vector2(GameManager.CELL_SIZE, GameManager.CELL_SIZE)), tint)
 
-	# 固定装饰点，避免运行时随机导致地图闪烁。
-	var decorations := [
-		Vector2(1.4, 5.8), Vector2(2.3, 6.8), Vector2(4.8, 0.8),
-		Vector2(5.2, 2.0), Vector2(8.6, 6.2), Vector2(10.5, 4.2),
-		Vector2(11.2, 0.7), Vector2(0.6, 3.8)
+	_draw_ground_details(background_color)
+
+func _draw_ground_details(background_color: Color) -> void:
+	var grass_color := background_color.lightened(0.28)
+	var dark_grass := background_color.darkened(0.18)
+	var rock_color := Color(0.18, 0.18, 0.16, 0.58)
+	var details := [
+		{"cell": Vector2i(1, 5), "offset": Vector2(28, 42), "kind": "bush"},
+		{"cell": Vector2i(2, 6), "offset": Vector2(20, 58), "kind": "rock"},
+		{"cell": Vector2i(4, 0), "offset": Vector2(62, 62), "kind": "grass"},
+		{"cell": Vector2i(5, 2), "offset": Vector2(18, 16), "kind": "bush"},
+		{"cell": Vector2i(8, 6), "offset": Vector2(52, 16), "kind": "rock"},
+		{"cell": Vector2i(10, 4), "offset": Vector2(36, 20), "kind": "rock"},
+		{"cell": Vector2i(11, 0), "offset": Vector2(18, 54), "kind": "bush"},
+		{"cell": Vector2i(0, 3), "offset": Vector2(50, 52), "kind": "grass"},
+		{"cell": Vector2i(3, 6), "offset": Vector2(24, 26), "kind": "grass"},
+		{"cell": Vector2i(9, 6), "offset": Vector2(52, 52), "kind": "bush"},
 	]
-	for i in range(decorations.size()):
-		var pos: Vector2 = decorations[i] * GameManager.CELL_SIZE
-		if i % 3 == 0:
-			draw_circle(pos, 10.0, Color(0.07, 0.13, 0.08, 0.65))
-			draw_circle(pos + Vector2(7, -3), 7.0, Color(0.08, 0.16, 0.09, 0.55))
-		else:
-			draw_circle(pos, 6.0, Color(0.18, 0.18, 0.16, 0.6))
-			draw_circle(pos + Vector2(5, 4), 4.0, Color(0.1, 0.1, 0.09, 0.55))
+
+	for detail in details:
+		var cell: Vector2i = detail["cell"]
+		if cell in GameManager.path_cells:
+			continue
+
+		var pos: Vector2 = Vector2(cell.x, cell.y) * GameManager.CELL_SIZE + detail["offset"]
+		match String(detail["kind"]):
+			"bush":
+				draw_circle(pos, 10.0, dark_grass)
+				draw_circle(pos + Vector2(7, -3), 7.0, grass_color.darkened(0.12))
+				draw_circle(pos + Vector2(-6, 2), 6.0, grass_color.darkened(0.2))
+			"rock":
+				draw_circle(pos, 6.0, rock_color)
+				draw_circle(pos + Vector2(5, 4), 4.0, rock_color.darkened(0.35))
+			_:
+				for blade in range(3):
+					var x := float(blade * 5 - 5)
+					draw_line(pos + Vector2(x, 5), pos + Vector2(x + 2, -5), grass_color, 1.6)
 
 func _draw_buildable_cells() -> void:
 	var buildable_color := GameManager.get_level_buildable_color()
@@ -344,20 +367,61 @@ func _draw_path() -> void:
 			GameManager.CELL_SIZE,
 			GameManager.CELL_SIZE
 		)
-		draw_rect(rect, path_color)
-		draw_rect(rect.grow(-3), path_color.lightened(0.16), false, 2.0)
+		draw_rect(rect, path_color.darkened(0.2))
+		draw_rect(rect.grow(-4), path_color)
+		draw_rect(rect.grow(-8), path_color.lightened(0.12), false, 1.5)
+		_draw_path_cell_details(cell, path_color)
 
 	# 绘制路径点连线（辅助线）
 	if GameManager.path_points.size() > 1:
 		for i in range(GameManager.path_points.size() - 1):
 			draw_line(GameManager.path_points[i], GameManager.path_points[i + 1],
-					  Color(0.5, 0.4, 0.25, 0.6), 3.0)
+					  path_color.lightened(0.22), 4.0)
 
 		var start_point := GameManager.path_points[0]
 		var end_point := GameManager.path_points[GameManager.path_points.size() - 1]
-		draw_circle(start_point, 14.0, Color(0.3, 0.8, 0.35, 0.95))
-		draw_circle(end_point, 16.0, Color(0.9, 0.2, 0.18, 0.95))
-		draw_arc(end_point, 24.0, 0.0, TAU, 32, Color(1.0, 0.35, 0.25, 0.75), 3.0)
+		_draw_start_marker(start_point)
+		_draw_goal_marker(end_point)
+
+func _draw_path_cell_details(cell: Vector2i, path_color: Color) -> void:
+	var base := Vector2(cell.x, cell.y) * GameManager.CELL_SIZE
+	var seed := cell.x * 37 + cell.y * 53
+	var pebble_color := path_color.lightened(0.25)
+	var shadow_color := path_color.darkened(0.28)
+
+	for i in range(2):
+		var offset := Vector2(
+			float(18 + ((seed + i * 19) % 43)),
+			float(18 + ((seed * 3 + i * 23) % 42))
+		)
+		var pos := base + offset
+		draw_circle(pos, 2.5, shadow_color)
+		draw_circle(pos + Vector2(-1, -1), 1.6, pebble_color)
+
+	for direction in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var neighbor: Vector2i = cell + direction
+		if neighbor in GameManager.path_cells:
+			continue
+
+		if direction.x != 0:
+			var x := base.x + (GameManager.CELL_SIZE if direction.x > 0 else 0)
+			draw_line(Vector2(x, base.y + 6), Vector2(x, base.y + GameManager.CELL_SIZE - 6), path_color.lightened(0.18), 2.0)
+		else:
+			var y := base.y + (GameManager.CELL_SIZE if direction.y > 0 else 0)
+			draw_line(Vector2(base.x + 6, y), Vector2(base.x + GameManager.CELL_SIZE - 6, y), path_color.lightened(0.18), 2.0)
+
+func _draw_start_marker(start_point: Vector2) -> void:
+	draw_circle(start_point, 18.0, Color(0.08, 0.28, 0.11, 0.95))
+	draw_circle(start_point, 12.0, Color(0.32, 0.86, 0.38, 0.95))
+	draw_line(start_point + Vector2(-18, 20), start_point + Vector2(18, 20), Color(0.08, 0.12, 0.08, 0.8), 4.0)
+	draw_arc(start_point, 24.0, PI * 1.05, PI * 1.95, 24, Color(0.68, 1.0, 0.58, 0.75), 2.0)
+
+func _draw_goal_marker(end_point: Vector2) -> void:
+	var base := Rect2(end_point - Vector2(22, 18), Vector2(44, 36))
+	draw_rect(base, Color(0.35, 0.08, 0.07, 0.95))
+	draw_rect(base.grow(-5), Color(0.9, 0.22, 0.16, 0.95))
+	draw_rect(Rect2(end_point + Vector2(-7, -3), Vector2(14, 21)), Color(0.12, 0.04, 0.04, 0.85))
+	draw_arc(end_point, 28.0, 0.0, TAU, 32, Color(1.0, 0.38, 0.25, 0.75), 3.0)
 
 func _draw_hover() -> void:
 	# 鼠标悬停高亮
