@@ -4,6 +4,13 @@ extends Node2D
 
 var _projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
 
+const TOWER_ART_PATHS := {
+	"arrow": "res://assets/towers/arrow_tower.svg",
+	"cannon": "res://assets/towers/cannon_tower.svg",
+	"frost": "res://assets/towers/frost_tower.svg",
+}
+static var _tower_art_textures: Dictionary = {}
+
 ## ---- 属性 ----
 var tower_type: String = "arrow"
 var tower_name: String = "箭塔"
@@ -98,6 +105,26 @@ func _get_projectiles_container() -> Node:
 		current = current.get_parent()
 	return null
 
+func _get_tower_art_texture() -> Texture2D:
+	if tower_type in _tower_art_textures:
+		return _tower_art_textures[tower_type]
+	if not (tower_type in TOWER_ART_PATHS):
+		return null
+
+	var path := String(TOWER_ART_PATHS[tower_type])
+	var svg_text := FileAccess.get_file_as_string(path)
+	if svg_text.is_empty():
+		return null
+
+	var image := Image.new()
+	var error := image.load_svg_from_string(svg_text)
+	if error != OK:
+		return null
+
+	var texture := ImageTexture.create_from_image(image)
+	_tower_art_textures[tower_type] = texture
+	return texture
+
 func setup(new_tower_type: String, new_grid_cell: Vector2i) -> void:
 	tower_type = new_tower_type
 	grid_cell = new_grid_cell
@@ -155,29 +182,17 @@ func _apply_config() -> void:
 		attack_area.get_node("CollisionShape2D").shape = shape
 	queue_redraw()
 
-## ---- 绘制（用色块代替美术资源） ----
+## ---- 绘制美术资源与攻击提示 ----
 func _draw() -> void:
 	var draw_color := body_color if _shot_flash_timer <= 0.0 else Color(1.0, 0.9, 0.25)
-	draw_circle(Vector2.ZERO, 28.0, Color(0.07, 0.09, 0.11))
-
-	if tower_type == "cannon":
-		draw_circle(Vector2.ZERO, 23.0, draw_color)
-		draw_rect(Rect2(-8, -38, 16, 38), Color(0.12, 0.12, 0.13))
-		draw_circle(Vector2(0, -34), 7.0, Color(0.06, 0.06, 0.07))
-	elif tower_type == "frost":
-		var points := PackedVector2Array([
-			Vector2(0, -30), Vector2(28, 0), Vector2(0, 30), Vector2(-28, 0)
-		])
-		draw_polygon(points, PackedColorArray([draw_color]))
-		draw_arc(Vector2.ZERO, 18.0, 0, TAU, 6, Color(0.8, 1.0, 1.0, 0.9), 3.0)
+	var art_texture := _get_tower_art_texture()
+	if art_texture:
+		var modulate := Color.WHITE if _shot_flash_timer <= 0.0 else Color(1.25, 1.15, 0.65)
+		draw_texture_rect(art_texture, Rect2(-32, -34, 64, 64), false, modulate)
 	else:
-		draw_rect(Rect2(-22, -18, 44, 38), draw_color)
-		var arrow_head := PackedVector2Array([
-			Vector2(0, -36), Vector2(24, -12), Vector2(-24, -12)
-		])
-		draw_polygon(arrow_head, PackedColorArray([Color(0.12, 0.18, 0.35)]))
+		draw_circle(Vector2.ZERO, 24.0, draw_color)
 
-	draw_circle(Vector2(0, 0), 5.0 + float(level) * 2.0, Color(1, 1, 1, 0.78))
+	draw_circle(Vector2(0, 0), 4.0 + float(level) * 2.0, Color(1, 1, 1, 0.78))
 
 	draw_arc(Vector2.ZERO, attack_range, 0, TAU, 64, Color(0.35, 0.55, 1.0, 0.18), 1.0)
 

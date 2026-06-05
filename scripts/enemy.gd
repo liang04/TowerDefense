@@ -2,6 +2,13 @@
 ## 沿 GameManager 中定义的路径点移动，到达终点扣玩家生命
 extends Node2D
 
+const ENEMY_ART_PATHS := {
+	"grunt": "res://assets/enemies/grunt.svg",
+	"runner": "res://assets/enemies/runner.svg",
+	"tank": "res://assets/enemies/tank.svg",
+}
+static var _enemy_art_textures: Dictionary = {}
+
 ## ---- 属性 ----
 var max_hp: int = 30
 var hp: int = 30
@@ -95,6 +102,26 @@ func get_path_progress() -> float:
 	var segment_progress := segment_start.distance_to(global_position) / segment_length
 	return float(previous_index) + clampf(segment_progress, 0.0, 1.0)
 
+func _get_enemy_art_texture() -> Texture2D:
+	if enemy_type in _enemy_art_textures:
+		return _enemy_art_textures[enemy_type]
+	if not (enemy_type in ENEMY_ART_PATHS):
+		return null
+
+	var path := String(ENEMY_ART_PATHS[enemy_type])
+	var svg_text := FileAccess.get_file_as_string(path)
+	if svg_text.is_empty():
+		return null
+
+	var image := Image.new()
+	var error := image.load_svg_from_string(svg_text)
+	if error != OK:
+		return null
+
+	var texture := ImageTexture.create_from_image(image)
+	_enemy_art_textures[enemy_type] = texture
+	return texture
+
 ## ---- 内部方法 ----
 
 ## 被击杀
@@ -108,7 +135,7 @@ func _on_reached_end() -> void:
 	GameManager.lose_life(1)
 	queue_free()
 
-## ---- 绘制（用色块代替美术资源） ----
+## ---- 绘制美术资源、状态和血条 ----
 func _draw() -> void:
 	var color: Color
 
@@ -122,19 +149,17 @@ func _draw() -> void:
 	if _hit_flash_timer > 0.0:
 		color = color.lerp(Color.WHITE, 0.65)
 
-	if enemy_type == "runner":
+	var art_texture := _get_enemy_art_texture()
+	if art_texture:
+		var size := Vector2(44, 44) if enemy_type != "tank" else Vector2(52, 52)
+		draw_texture_rect(art_texture, Rect2(-size * 0.5, size), false, color)
+	elif enemy_type == "runner":
 		var runner_shape := PackedVector2Array([
 			Vector2(0, -18), Vector2(18, 0), Vector2(0, 18), Vector2(-18, 0)
 		])
 		draw_polygon(runner_shape, PackedColorArray([color]))
-		draw_circle(Vector2(0, 0), 5.0, Color(0.12, 0.12, 0.08, 0.65))
-	elif enemy_type == "tank":
-		draw_rect(Rect2(-19, -17, 38, 34), Color(0.12, 0.1, 0.08))
-		draw_rect(Rect2(-16, -14, 32, 28), color)
-		draw_line(Vector2(-10, -3), Vector2(10, -3), Color(0.18, 0.16, 0.13), 3.0)
 	else:
 		draw_rect(Rect2(-15, -15, 30, 30), color)
-		draw_circle(Vector2(0, 0), 4.0, Color(0.08, 0.12, 0.08, 0.55))
 
 	if _slow_timer > 0.0:
 		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
