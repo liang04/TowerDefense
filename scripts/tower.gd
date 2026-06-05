@@ -130,6 +130,9 @@ func get_sell_value() -> int:
 func get_display_name() -> String:
 	return "%s Lv.%d" % [tower_name, level]
 
+func get_stats_text() -> String:
+	return GameManager.get_tower_stats_text(tower_type, level)
+
 func _apply_config() -> void:
 	var config := GameManager.get_tower_config(tower_type)
 	var level_scale := 1.0 + float(level - 1) * 0.45

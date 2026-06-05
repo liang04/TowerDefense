@@ -14,6 +14,7 @@ var selected_tower_type: String = "basic"
 @onready var wave_label: Label = $MarginContainer/VBoxContainer/TopBar/WaveLabel
 @onready var level_label: Label = $MarginContainer/VBoxContainer/TopBar/LevelLabel
 @onready var wave_preview_label: Label = $MarginContainer/VBoxContainer/WavePreviewLabel
+@onready var enemy_legend_label: Label = $MarginContainer/VBoxContainer/EnemyLegendLabel
 @onready var info_label: Label = $MarginContainer/VBoxContainer/InfoLabel
 @onready var message_label: Label = $MarginContainer/VBoxContainer/MessageLabel
 @onready var overlay: Control = $Overlay
@@ -109,6 +110,7 @@ func _update_all() -> void:
 	lives_label.text = "生命: %d" % GameManager.lives
 	_update_wave_text(0)
 	_update_wave_preview(1, "下一波")
+	_update_enemy_legend()
 	_update_level_text()
 	_update_selected_tower_text()
 	set_start_wave_available(true)
@@ -172,13 +174,16 @@ func _update_wave_text(wave_num: int) -> void:
 func _update_wave_preview(wave_num: int, prefix: String) -> void:
 	wave_preview_label.text = GameManager.get_wave_preview_text(wave_num, prefix)
 
+func _update_enemy_legend() -> void:
+	enemy_legend_label.text = "敌人：绿色普通 | 黄色快速 | 灰色重甲"
+
 func _update_selected_tower_text() -> void:
 	_selected_tower_for_actions = null
 	var config := GameManager.get_tower_config(GameManager.selected_tower_type)
 	info_label.text = "当前: %s | 费用: %d | %s" % [
 		String(config["name"]),
 		GameManager.get_tower_cost(GameManager.selected_tower_type),
-		String(config["description"]),
+		GameManager.get_tower_stats_text(GameManager.selected_tower_type),
 	]
 	_update_tower_buttons()
 	_update_action_buttons()
@@ -208,7 +213,7 @@ func show_tower_details(tower: Node) -> void:
 
 	info_label.text = "选中: %s | %s | 出售: %d 金币" % [
 		String(tower.call("get_display_name")),
-		upgrade_text,
+		String(tower.call("get_stats_text")) + " | " + upgrade_text,
 		int(tower.call("get_sell_value")),
 	]
 	_update_action_buttons()

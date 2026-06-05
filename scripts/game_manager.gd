@@ -185,6 +185,27 @@ func get_tower_config(tower_type: String) -> Dictionary:
 func get_tower_cost(tower_type: String) -> int:
 	return int(get_tower_config(tower_type)["cost"])
 
+func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
+	var config := get_tower_config(tower_type)
+	var level_scale := 1.0 + float(tower_level - 1) * 0.45
+	var range_bonus := float(tower_level - 1) * 14.0
+	var cooldown_scale := 1.0 - float(tower_level - 1) * 0.12
+	var damage := int(round(float(config["damage"]) * level_scale))
+	var attack_range := int(round(float(config["range"]) + range_bonus))
+	var cooldown := maxf(float(config["cooldown"]) * cooldown_scale, 0.18)
+	var slow_multiplier := float(config["slow_multiplier"])
+	var slow_duration := float(config["slow_duration"])
+	var parts: Array[String] = [
+		"伤害 %d" % damage,
+		"射程 %d" % attack_range,
+		"间隔 %.2fs" % cooldown,
+	]
+
+	if slow_duration > 0.0 and slow_multiplier < 1.0:
+		parts.append("减速 %d%% %.1fs" % [int(round((1.0 - slow_multiplier) * 100.0)), slow_duration])
+
+	return " | ".join(parts)
+
 func set_selected_tower_type(tower_type: String) -> void:
 	if not (tower_type in tower_configs):
 		return
