@@ -78,4 +78,42 @@ static func get_levels() -> Array[Dictionary]:
 				]},
 			],
 		},
+		{
+			"name": "熔岩急道",
+			"description": "路线较短、压力更高，适合练习冰塔减速和炮塔集火。",
+			"starting_gold": 220,
+			"starting_lives": 14,
+			"background": Color(0.18, 0.14, 0.12),
+			"buildable_color": Color(0.42, 0.24, 0.18, 0.26),
+			"path_color": Color(0.46, 0.25, 0.16),
+			"path": [
+				Vector2i(0, 4), Vector2i(1, 4), Vector2i(2, 4), Vector2i(3, 4),
+				Vector2i(3, 3), Vector2i(3, 2), Vector2i(4, 2), Vector2i(5, 2), Vector2i(6, 2),
+				Vector2i(6, 3), Vector2i(6, 4), Vector2i(7, 4), Vector2i(8, 4), Vector2i(9, 4),
+				Vector2i(9, 3), Vector2i(9, 2), Vector2i(10, 2), Vector2i(11, 2),
+			],
+			"waves": [
+				{"groups": [
+					{"count": 6, "interval": 0.55, "type": "runner", "hp": 32, "speed": 198.0, "reward": 13, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 4, "interval": 0.7, "type": "grunt", "hp": 52, "speed": 138.0, "reward": 12, "color": Color(0.25, 0.8, 0.25)},
+				]},
+				{"groups": [
+					{"count": 5, "interval": 0.85, "type": "tank", "hp": 145, "speed": 92.0, "reward": 25, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 8, "interval": 0.45, "type": "runner", "hp": 38, "speed": 212.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
+				]},
+				{"groups": [
+					{"count": 14, "interval": 0.34, "type": "grunt", "hp": 72, "speed": 148.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
+					{"count": 4, "interval": 0.7, "type": "tank", "hp": 185, "speed": 96.0, "reward": 29, "color": Color(0.62, 0.55, 0.48)},
+				]},
+				{"groups": [
+					{"count": 10, "interval": 0.38, "type": "runner", "hp": 50, "speed": 220.0, "reward": 16, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 7, "interval": 0.65, "type": "tank", "hp": 230, "speed": 98.0, "reward": 32, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 10, "interval": 0.35, "type": "grunt", "hp": 88, "speed": 152.0, "reward": 14, "color": Color(0.25, 0.8, 0.25)},
+				]},
+				{"groups": [
+					{"count": 8, "interval": 0.32, "type": "runner", "hp": 62, "speed": 228.0, "reward": 18, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 9, "interval": 0.55, "type": "tank", "hp": 270, "speed": 102.0, "reward": 36, "color": Color(0.62, 0.55, 0.48)},
+				]},
+			],
+		},
 	]

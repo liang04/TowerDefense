@@ -30,7 +30,7 @@ const ENEMY_TYPE_NAMES := {
 
 const ENEMY_TYPE_ADVICE := {
 	"grunt": "箭塔",
-	"runner": "箭塔/冰塔",
+	"runner": "冰塔",
 	"tank": "炮塔",
 }
 
