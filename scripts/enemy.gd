@@ -25,6 +25,8 @@ var _slow_timer: float = 0.0
 var _slow_multiplier: float = 1.0
 var _hit_flash_timer: float = 0.0
 var _hit_punch_tween: Tween = null
+var _anim: AnimatedSprite2D = null
+var _use_sprite: bool = false
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -33,6 +35,22 @@ func _ready() -> void:
 	if _waypoints.size() > 0:
 		global_position = _waypoints[0]
 		_current_wp_index = 1
+	_setup_sprite()
+
+## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
+func _setup_sprite() -> void:
+	var frames := SpriteLibrary.build_enemy_frames(enemy_type)
+	if frames == null:
+		return
+	_anim = AnimatedSprite2D.new()
+	_anim.sprite_frames = frames
+	_anim.scale = Vector2.ONE * SpriteLibrary.get_enemy_scale(enemy_type)
+	# 置于父节点之后绘制，使血条/减速光圈叠加在精灵之上
+	_anim.show_behind_parent = true
+	add_child(_anim)
+	_anim.play(SpriteLibrary.ANIM_NAME)
+	_use_sprite = true
+	queue_redraw()
 
 func _process(delta: float) -> void:
 	if _current_wp_index >= _waypoints.size():
@@ -60,9 +78,18 @@ func _process(delta: float) -> void:
 	else:
 		global_position += direction * move_distance
 
+	if _use_sprite:
+		_update_sprite_visual(direction)
+
 	# 移动本身由节点变换处理，无需重绘；仅在减速光圈 / 受击闪白刚结束时重绘
 	if (was_slowed and _slow_timer <= 0.0) or (was_flashing and _hit_flash_timer <= 0.0):
 		queue_redraw()
+
+## 精灵模式下：按行进方向水平翻转，受击时整体提亮
+func _update_sprite_visual(direction: Vector2) -> void:
+	if absf(direction.x) > 0.01:
+		_anim.flip_h = direction.x < 0.0
+	_anim.modulate = Color(1.5, 1.5, 1.5) if _hit_flash_timer > 0.0 else Color.WHITE
 
 ## ---- 公共方法 ----
 
@@ -154,6 +181,24 @@ func _on_reached_end() -> void:
 
 ## ---- 绘制美术资源、状态和血条 ----
 func _draw() -> void:
+	# 精灵模式由 AnimatedSprite2D 绘制本体，这里只补充状态层；否则走原渲染
+	if not _use_sprite:
+		_draw_body()
+
+	if _slow_timer > 0.0:
+		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
+
+	# 血量条背景
+	var bar_bg := Rect2(-15, -22, 30, 5)
+	draw_rect(bar_bg, Color(0.3, 0.3, 0.3))
+
+	# 血量条前景
+	var hp_ratio := float(hp) / float(max_hp)
+	var bar_fg := Rect2(-15, -22, 30.0 * hp_ratio, 5)
+	draw_rect(bar_fg, Color(0.1, 0.9, 0.1))
+
+## SVG / 程序化本体绘制（无 PNG 素材时的回退渲染）
+func _draw_body() -> void:
 	var color: Color
 
 	if hp > max_hp * 0.6:
@@ -177,15 +222,3 @@ func _draw() -> void:
 		draw_polygon(runner_shape, PackedColorArray([color]))
 	else:
 		draw_rect(Rect2(-15, -15, 30, 30), color)
-
-	if _slow_timer > 0.0:
-		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
-
-	# 血量条背景
-	var bar_bg := Rect2(-15, -22, 30, 5)
-	draw_rect(bar_bg, Color(0.3, 0.3, 0.3))
-
-	# 血量条前景
-	var hp_ratio := float(hp) / float(max_hp)
-	var bar_fg := Rect2(-15, -22, 30.0 * hp_ratio, 5)
-	draw_rect(bar_fg, Color(0.1, 0.9, 0.1))

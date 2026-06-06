@@ -48,10 +48,28 @@ var _scan_timer: float = 0.0
 var _selected: bool = false
 var _projectiles_container: Node = null
 var target_priority: String = "progress"
+var _anim: AnimatedSprite2D = null
+var _use_sprite: bool = false
 
 ## ---- 生命周期 ----
 func _ready() -> void:
 	_apply_config()
+	_setup_sprite()
+
+## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
+func _setup_sprite() -> void:
+	var frames := SpriteLibrary.build_tower_frames(tower_type)
+	if frames == null:
+		return
+	_anim = AnimatedSprite2D.new()
+	_anim.sprite_frames = frames
+	_anim.scale = Vector2.ONE * SpriteLibrary.get_tower_scale(tower_type)
+	# 置于父节点之后绘制，使等级点/射程圈/攻击线叠加在精灵之上
+	_anim.show_behind_parent = true
+	add_child(_anim)
+	_anim.play(SpriteLibrary.ANIM_NAME)
+	_use_sprite = true
+	queue_redraw()
 
 func _process(delta: float) -> void:
 	var was_flashing := _shot_flash_timer > 0.0
@@ -74,6 +92,9 @@ func _process(delta: float) -> void:
 	if _current_target and _cooldown_timer <= 0.0:
 		_attack(_current_target)
 		_cooldown_timer = attack_cooldown
+
+	if _use_sprite:
+		_anim.modulate = Color(1.5, 1.4, 0.9) if _shot_flash_timer > 0.0 else Color.WHITE
 
 	# 仅在需要时重绘：有目标（指示线跟随移动）/ 闪光仍在或刚结束 / 目标发生变化
 	if _current_target or was_flashing or previous_target != _current_target:
@@ -242,13 +263,15 @@ func _apply_config() -> void:
 
 ## ---- 绘制美术资源与攻击提示 ----
 func _draw() -> void:
-	var draw_color := body_color if _shot_flash_timer <= 0.0 else Color(1.0, 0.9, 0.25)
-	var art_texture := _get_tower_art_texture()
-	if art_texture:
-		var modulate := Color.WHITE if _shot_flash_timer <= 0.0 else Color(1.25, 1.15, 0.65)
-		draw_texture_rect(art_texture, Rect2(-32, -34, 64, 64), false, modulate)
-	else:
-		draw_circle(Vector2.ZERO, 24.0, draw_color)
+	# 精灵模式由 AnimatedSprite2D 绘制本体，这里只补充等级点/射程圈/攻击线
+	if not _use_sprite:
+		var draw_color := body_color if _shot_flash_timer <= 0.0 else Color(1.0, 0.9, 0.25)
+		var art_texture := _get_tower_art_texture()
+		if art_texture:
+			var modulate := Color.WHITE if _shot_flash_timer <= 0.0 else Color(1.25, 1.15, 0.65)
+			draw_texture_rect(art_texture, Rect2(-32, -34, 64, 64), false, modulate)
+		else:
+			draw_circle(Vector2.ZERO, 24.0, draw_color)
 
 	draw_circle(Vector2(0, 0), 4.0 + float(level) * 2.0, Color(1, 1, 1, 0.78))
 
