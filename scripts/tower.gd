@@ -29,6 +29,15 @@ var body_color: Color = Color(0.2, 0.45, 0.95)
 ## 目标重选间隔（秒）：避免每帧对全体敌人做一次全量扫描
 const TARGET_SCAN_INTERVAL := 0.1
 
+## 可选的目标优先级，按顺序循环切换
+const TARGET_PRIORITIES: Array[String] = ["progress", "nearest", "strongest", "fastest"]
+const TARGET_PRIORITY_LABELS := {
+	"progress": "前排",
+	"nearest": "最近",
+	"strongest": "最血",
+	"fastest": "最快",
+}
+
 ## ---- 内部状态 ----
 var _cooldown_timer: float = 0.0
 var _current_target: Node2D = null
@@ -36,6 +45,7 @@ var _shot_flash_timer: float = 0.0
 var _scan_timer: float = 0.0
 var _selected: bool = false
 var _projectiles_container: Node = null
+var target_priority: String = "progress"
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -78,7 +88,7 @@ func set_selected(value: bool) -> void:
 
 func _select_target() -> void:
 	var best_target: Node2D = null
-	var best_progress: float = -INF
+	var best_score: float = -INF
 	var best_distance: float = INF
 
 	for node in get_tree().get_nodes_in_group("enemies"):
@@ -90,16 +100,40 @@ func _select_target() -> void:
 		if distance > attack_range:
 			continue
 
-		var progress := 0.0
-		if enemy.has_method("get_path_progress"):
-			progress = float(enemy.call("get_path_progress"))
-
-		if progress > best_progress or (is_equal_approx(progress, best_progress) and distance < best_distance):
-			best_progress = progress
+		# 同分时一律取更近的目标作为决胜
+		var score := _priority_score(enemy, distance)
+		if score > best_score or (is_equal_approx(score, best_score) and distance < best_distance):
+			best_score = score
 			best_distance = distance
 			best_target = enemy
 
 	_current_target = best_target
+
+## 根据当前优先级为候选敌人打分，分数越高越优先
+func _priority_score(enemy: Node2D, distance: float) -> float:
+	match target_priority:
+		"nearest":
+			return -distance
+		"strongest":
+			var hp = enemy.get("hp")
+			return float(hp) if hp != null else 0.0
+		"fastest":
+			var spd = enemy.get("speed")
+			return float(spd) if spd != null else 0.0
+		_:  # progress：路径进度最远（默认）
+			if enemy.has_method("get_path_progress"):
+				return float(enemy.call("get_path_progress"))
+			return 0.0
+
+## 循环切换目标优先级，并立即按新优先级重选目标
+func cycle_target_priority() -> void:
+	var index := TARGET_PRIORITIES.find(target_priority)
+	target_priority = TARGET_PRIORITIES[(index + 1) % TARGET_PRIORITIES.size()]
+	_select_target()
+	queue_redraw()
+
+func get_target_priority_label() -> String:
+	return String(TARGET_PRIORITY_LABELS.get(target_priority, "前排"))
 
 func _attack(target: Node2D) -> void:
 	if not is_instance_valid(target):

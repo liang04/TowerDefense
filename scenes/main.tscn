@@ -133,6 +133,11 @@ text = "炮塔 75"
 layout_mode = 2
 text = "冰塔 60"
 
+[node name="PriorityButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
+layout_mode = 2
+disabled = true
+text = "目标"
+
 [node name="UpgradeButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
 layout_mode = 2
 disabled = true

@@ -43,6 +43,7 @@ var selected_tower_type: String = "basic"
 @onready var arrow_tower_button: Button = $MarginContainer/VBoxContainer/BottomBar/ArrowTowerButton
 @onready var cannon_tower_button: Button = $MarginContainer/VBoxContainer/BottomBar/CannonTowerButton
 @onready var frost_tower_button: Button = $MarginContainer/VBoxContainer/BottomBar/FrostTowerButton
+@onready var priority_button: Button = $MarginContainer/VBoxContainer/BottomBar/PriorityButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BottomBar/UpgradeButton
 @onready var sell_button: Button = $MarginContainer/VBoxContainer/BottomBar/SellButton
 
@@ -84,6 +85,7 @@ func _ready() -> void:
 	arrow_tower_button.pressed.connect(_on_tower_button_pressed.bind("arrow"))
 	cannon_tower_button.pressed.connect(_on_tower_button_pressed.bind("cannon"))
 	frost_tower_button.pressed.connect(_on_tower_button_pressed.bind("frost"))
+	priority_button.pressed.connect(_on_priority_pressed)
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
 	sell_button.pressed.connect(_on_sell_pressed)
 	_tower_buttons = {
@@ -118,7 +120,7 @@ func _update_all() -> void:
 	_update_selected_tower_text()
 	_update_speed_button(GameManager.get_game_speed())
 	set_start_wave_available(true)
-	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可点按钮升级/出售，F 键快进"
+	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可升级/出售，T 切目标，F 快进"
 
 func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = "金币: %d" % new_gold
@@ -215,9 +217,10 @@ func show_tower_details(tower: Node) -> void:
 	if tower.call("can_upgrade"):
 		upgrade_text = "升级: %d 金币" % int(tower.call("get_upgrade_cost"))
 
-	info_label.text = "选中: %s | %s | 出售: %d 金币" % [
+	info_label.text = "选中: %s | %s | 目标: %s | 出售: %d 金币" % [
 		String(tower.call("get_display_name")),
 		String(tower.call("get_stats_text")) + " | " + upgrade_text,
+		String(tower.call("get_target_priority_label")),
 		int(tower.call("get_sell_value")),
 	]
 	_update_action_buttons()
@@ -225,11 +228,16 @@ func show_tower_details(tower: Node) -> void:
 func _update_action_buttons() -> void:
 	var has_tower := _selected_tower_for_actions != null and is_instance_valid(_selected_tower_for_actions)
 	if not has_tower:
+		priority_button.text = "目标"
+		priority_button.disabled = true
 		upgrade_button.text = "升级"
 		upgrade_button.disabled = true
 		sell_button.text = "出售"
 		sell_button.disabled = true
 		return
+
+	priority_button.text = "目标: %s" % String(_selected_tower_for_actions.call("get_target_priority_label"))
+	priority_button.disabled = false
 
 	var can_upgrade: bool = _selected_tower_for_actions.call("can_upgrade")
 	var upgrade_cost := int(_selected_tower_for_actions.call("get_upgrade_cost"))
@@ -312,6 +320,9 @@ func _on_start_pressed() -> void:
 
 func _on_tower_button_pressed(tower_type: String) -> void:
 	get_parent().call("_select_tower_type", tower_type)
+
+func _on_priority_pressed() -> void:
+	get_parent().call("_cycle_selected_tower_priority")
 
 func _on_upgrade_pressed() -> void:
 	get_parent().call("_upgrade_selected_tower")

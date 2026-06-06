@@ -115,6 +115,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_sell_selected_tower()
 		elif event.keycode == KEY_F:
 			GameManager.cycle_game_speed()
+		elif event.keycode == KEY_T:
+			_cycle_selected_tower_priority()
 		elif event.keycode == KEY_R:
 			_restart_game()
 
@@ -194,6 +196,14 @@ func _upgrade_selected_tower() -> void:
 	GameManager.request_sfx("upgrade")
 	hud.call("show_tower_details", _selected_tower)
 	queue_redraw()
+
+func _cycle_selected_tower_priority() -> void:
+	if not _selected_tower or not is_instance_valid(_selected_tower):
+		hud.call("show_message", "先点击选择一座塔")
+		return
+	_selected_tower.call("cycle_target_priority")
+	hud.call("show_tower_details", _selected_tower)
+	hud.call("show_message", "目标优先级：%s" % String(_selected_tower.call("get_target_priority_label")))
 
 func _sell_selected_tower() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
