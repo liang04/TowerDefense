@@ -9,6 +9,7 @@ var projectile_color: Color = Color(1.0, 0.85, 0.25)
 var _target: Node2D = null
 var _last_target_position: Vector2 = Vector2.ZERO
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
+var _effects_container: Node = null
 
 func setup(start_position: Vector2, target: Node2D, damage_value: int, slow_value: float, slow_time: float, color_value: Color) -> void:
 	global_position = start_position
@@ -35,7 +36,6 @@ func _process(delta: float) -> void:
 
 	global_position += to_target.normalized() * step
 	rotation = to_target.angle()
-	queue_redraw()
 
 func _hit() -> void:
 	if is_instance_valid(_target) and _target.has_method("take_damage"):
@@ -57,10 +57,13 @@ func _spawn_hit_effect() -> void:
 	effect.call("setup", global_position, projectile_color, 28.0)
 
 func _get_effects_container() -> Node:
+	if _effects_container and is_instance_valid(_effects_container):
+		return _effects_container
 	var current := get_parent()
 	while current:
 		var effects := current.get_node_or_null("Effects")
 		if effects:
+			_effects_container = effects
 			return effects
 		current = current.get_parent()
 	return null

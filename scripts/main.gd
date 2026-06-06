@@ -156,16 +156,24 @@ func _get_place_error_message(col: int, row: int) -> String:
 
 func _select_tower_type(tower_type: String) -> void:
 	GameManager.set_selected_tower_type(tower_type)
-	_selected_tower = null
+	_set_selected_tower(null)
 	_selected_cell = Vector2i(-1, -1)
 	hud.call("show_tower_details", null)
 	queue_redraw()
 
 func _select_existing_tower(tower: Node, cell: Vector2i) -> void:
-	_selected_tower = tower
+	_set_selected_tower(tower)
 	_selected_cell = cell
 	hud.call("show_tower_details", tower)
 	queue_redraw()
+
+## 切换当前选中的塔，并同步塔自身的选中态（仅选中塔绘制射程圈）
+func _set_selected_tower(tower: Node) -> void:
+	if _selected_tower and is_instance_valid(_selected_tower) and _selected_tower != tower:
+		_selected_tower.call("set_selected", false)
+	_selected_tower = tower
+	if tower and is_instance_valid(tower):
+		tower.call("set_selected", true)
 
 func _upgrade_selected_tower() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):

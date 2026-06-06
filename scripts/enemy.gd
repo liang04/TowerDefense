@@ -36,6 +36,9 @@ func _process(delta: float) -> void:
 	if _current_wp_index >= _waypoints.size():
 		return
 
+	var was_slowed := _slow_timer > 0.0
+	var was_flashing := _hit_flash_timer > 0.0
+
 	_slow_timer = maxf(_slow_timer - delta, 0.0)
 	_hit_flash_timer = maxf(_hit_flash_timer - delta, 0.0)
 	if _slow_timer <= 0.0:
@@ -55,7 +58,9 @@ func _process(delta: float) -> void:
 	else:
 		global_position += direction * move_distance
 
-	queue_redraw()
+	# 移动本身由节点变换处理，无需重绘；仅在减速光圈 / 受击闪白刚结束时重绘
+	if (was_slowed and _slow_timer <= 0.0) or (was_flashing and _hit_flash_timer <= 0.0):
+		queue_redraw()
 
 ## ---- 公共方法 ----
 

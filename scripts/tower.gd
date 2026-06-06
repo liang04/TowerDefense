@@ -25,34 +25,52 @@ var slow_multiplier: float = 1.0
 var slow_duration: float = 0.0
 var body_color: Color = Color(0.2, 0.45, 0.95)
 
+## 目标重选间隔（秒）：避免每帧对全体敌人做一次全量扫描
+const TARGET_SCAN_INTERVAL := 0.1
+
 ## ---- 内部状态 ----
 var _cooldown_timer: float = 0.0
 var _current_target: Node2D = null
 var _shot_flash_timer: float = 0.0
-
-## ---- 节点引用 ----
-@onready var attack_area: Area2D = $AttackRangeArea
+var _scan_timer: float = 0.0
+var _selected: bool = false
+var _projectiles_container: Node = null
 
 ## ---- 生命周期 ----
 func _ready() -> void:
 	_apply_config()
 
 func _process(delta: float) -> void:
+	var was_flashing := _shot_flash_timer > 0.0
+	var previous_target := _current_target
+
 	_cooldown_timer = maxf(_cooldown_timer - delta, 0.0)
 	_shot_flash_timer = maxf(_shot_flash_timer - delta, 0.0)
+	_scan_timer = maxf(_scan_timer - delta, 0.0)
 
 	# 清理已销毁的目标
 	if _current_target and not is_instance_valid(_current_target):
 		_current_target = null
 
-	# 选择目标：优先攻击路径进度最高的敌人
-	_select_target()
+	# 降频重选目标：每 TARGET_SCAN_INTERVAL 秒一次，而非每帧全量扫描
+	if _scan_timer <= 0.0:
+		_scan_timer = TARGET_SCAN_INTERVAL
+		_select_target()
 
 	# 攻击
 	if _current_target and _cooldown_timer <= 0.0:
 		_attack(_current_target)
 		_cooldown_timer = attack_cooldown
 
+	# 仅在需要时重绘：有目标（指示线跟随移动）/ 闪光仍在或刚结束 / 目标发生变化
+	if _current_target or was_flashing or previous_target != _current_target:
+		queue_redraw()
+
+## 设置选中状态（由主场景调用），仅选中的塔绘制射程圈
+func set_selected(value: bool) -> void:
+	if _selected == value:
+		return
+	_selected = value
 	queue_redraw()
 
 ## ---- 内部方法 ----
@@ -97,10 +115,13 @@ func _attack(target: Node2D) -> void:
 	_shot_flash_timer = 0.12
 
 func _get_projectiles_container() -> Node:
+	if _projectiles_container and is_instance_valid(_projectiles_container):
+		return _projectiles_container
 	var current := get_parent()
 	while current:
 		var projectiles := current.get_node_or_null("Projectiles")
 		if projectiles:
+			_projectiles_container = projectiles
 			return projectiles
 		current = current.get_parent()
 	return null
@@ -176,10 +197,6 @@ func _apply_config() -> void:
 	if color_value is Color:
 		body_color = color_value
 
-	if is_node_ready():
-		var shape := CircleShape2D.new()
-		shape.radius = attack_range
-		attack_area.get_node("CollisionShape2D").shape = shape
 	queue_redraw()
 
 ## ---- 绘制美术资源与攻击提示 ----
@@ -194,7 +211,9 @@ func _draw() -> void:
 
 	draw_circle(Vector2(0, 0), 4.0 + float(level) * 2.0, Color(1, 1, 1, 0.78))
 
-	draw_arc(Vector2.ZERO, attack_range, 0, TAU, 64, Color(0.35, 0.55, 1.0, 0.18), 1.0)
+	# 射程圈只在塔被选中时绘制，避免每帧为所有塔绘制 64 段圆弧
+	if _selected:
+		draw_arc(Vector2.ZERO, attack_range, 0, TAU, 64, Color(0.35, 0.55, 1.0, 0.18), 1.0)
 
 	# 攻击指示线（指向当前目标）
 	if _current_target and is_instance_valid(_current_target):
