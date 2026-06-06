@@ -1,5 +1,7 @@
-# Godot editor/import cache
-.godot/
+# Godot editor/import cache（忽略 .godot 下内容，但保留全局类注册表，
+# 使其他机器克隆后无需先在编辑器中导入即可直接运行 class_name 类型）
+.godot/*
+!.godot/global_script_class_cache.cfg
 
 # Godot generated files
 *.translation
