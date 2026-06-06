@@ -183,16 +183,14 @@ func get_stats_text() -> String:
 
 func _apply_config() -> void:
 	var config := GameManager.get_tower_config(tower_type)
-	var level_scale := 1.0 + float(level - 1) * 0.45
-	var range_bonus := float(level - 1) * 14.0
-	var cooldown_scale := 1.0 - float(level - 1) * 0.12
+	var stats := GameManager.get_scaled_tower_stats(tower_type, level)
 
 	tower_name = String(config["name"])
-	attack_damage = int(round(float(config["damage"]) * level_scale))
-	attack_range = float(config["range"]) + range_bonus
-	attack_cooldown = maxf(float(config["cooldown"]) * cooldown_scale, 0.18)
-	slow_multiplier = float(config["slow_multiplier"])
-	slow_duration = float(config["slow_duration"])
+	attack_damage = int(stats["damage"])
+	attack_range = float(stats["range"])
+	attack_cooldown = float(stats["cooldown"])
+	slow_multiplier = float(stats["slow_multiplier"])
+	slow_duration = float(stats["slow_duration"])
 	var color_value = config["color"]
 	if color_value is Color:
 		body_color = color_value

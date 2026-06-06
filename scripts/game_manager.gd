@@ -23,6 +23,12 @@ const GRID_COLS := 12       # 地图列数（宽）
 const GRID_ROWS := 8        # 地图行数（高）
 const MAP_OFFSET_Y := 48    # 地图整体下移的像素，给顶部信息栏留出空间
 
+## 塔的等级缩放参数（塔实体与 HUD 显示共用，避免公式重复）
+const LEVEL_DAMAGE_SCALE_PER_LEVEL := 0.45   # 每级伤害加成比例
+const LEVEL_RANGE_BONUS_PER_LEVEL := 14.0    # 每级射程加成（像素）
+const LEVEL_COOLDOWN_SCALE_PER_LEVEL := 0.12 # 每级冷却缩减比例
+const MIN_COOLDOWN := 0.18                    # 冷却时间下限（秒）
+
 const ENEMY_TYPE_NAMES := {
 	"grunt": "普通怪",
 	"runner": "快速怪",
@@ -186,20 +192,28 @@ func get_tower_config(tower_type: String) -> Dictionary:
 func get_tower_cost(tower_type: String) -> int:
 	return int(get_tower_config(tower_type)["cost"])
 
-func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
+## 按等级缩放后的塔数值（伤害/射程/冷却/减速），塔实体与 HUD 共用此唯一公式
+func get_scaled_tower_stats(tower_type: String, tower_level: int = 1) -> Dictionary:
 	var config := get_tower_config(tower_type)
-	var level_scale := 1.0 + float(tower_level - 1) * 0.45
-	var range_bonus := float(tower_level - 1) * 14.0
-	var cooldown_scale := 1.0 - float(tower_level - 1) * 0.12
-	var damage := int(round(float(config["damage"]) * level_scale))
-	var attack_range := int(round(float(config["range"]) + range_bonus))
-	var cooldown := maxf(float(config["cooldown"]) * cooldown_scale, 0.18)
-	var slow_multiplier := float(config["slow_multiplier"])
-	var slow_duration := float(config["slow_duration"])
+	var level_offset := float(tower_level - 1)
+	var damage_scale := 1.0 + level_offset * LEVEL_DAMAGE_SCALE_PER_LEVEL
+	var cooldown_scale := 1.0 - level_offset * LEVEL_COOLDOWN_SCALE_PER_LEVEL
+	return {
+		"damage": int(round(float(config["damage"]) * damage_scale)),
+		"range": float(config["range"]) + level_offset * LEVEL_RANGE_BONUS_PER_LEVEL,
+		"cooldown": maxf(float(config["cooldown"]) * cooldown_scale, MIN_COOLDOWN),
+		"slow_multiplier": float(config["slow_multiplier"]),
+		"slow_duration": float(config["slow_duration"]),
+	}
+
+func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
+	var stats := get_scaled_tower_stats(tower_type, tower_level)
+	var slow_multiplier := float(stats["slow_multiplier"])
+	var slow_duration := float(stats["slow_duration"])
 	var parts: Array[String] = [
-		"伤害 %d" % damage,
-		"射程 %d" % attack_range,
-		"间隔 %.2fs" % cooldown,
+		"伤害 %d" % int(stats["damage"]),
+		"射程 %d" % int(round(float(stats["range"]))),
+		"间隔 %.2fs" % float(stats["cooldown"]),
 	]
 
 	if slow_duration > 0.0 and slow_multiplier < 1.0:
