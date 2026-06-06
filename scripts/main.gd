@@ -512,19 +512,15 @@ func _draw_path() -> void:
 		draw_rect(rect.grow(-8), path_color.lightened(0.12), false, 1.5)
 		_draw_path_cell_details(cell, path_color)
 
-	# 绘制路径点连线（辅助线）
-	# path_points 已带 MAP_OFFSET_Y，而 _draw 整体又施加了同样的偏移变换，
-	# 这里减去一次，避免连线和起终点标记被二次下移。
-	var offset := Vector2(0, GameManager.MAP_OFFSET_Y)
-	if GameManager.path_points.size() > 1:
-		for i in range(GameManager.path_points.size() - 1):
-			draw_line(GameManager.path_points[i] - offset, GameManager.path_points[i + 1] - offset,
-					  path_color.lightened(0.22), 4.0)
+	# 绘制路径点连线（辅助线）：_draw 已施加 MAP_OFFSET_Y 变换，这里用局部坐标
+	# 直接绘制，与地图格子同一坐标系，无需再做偏移加减
+	var points := GameManager.path_points_local
+	if points.size() > 1:
+		for i in range(points.size() - 1):
+			draw_line(points[i], points[i + 1], path_color.lightened(0.22), 4.0)
 
-		var start_point := GameManager.path_points[0] - offset
-		var end_point := GameManager.path_points[GameManager.path_points.size() - 1] - offset
-		_draw_start_marker(start_point)
-		_draw_goal_marker(end_point)
+		_draw_start_marker(points[0])
+		_draw_goal_marker(points[points.size() - 1])
 
 func _draw_path_cell_details(cell: Vector2i, path_color: Color) -> void:
 	var base := Vector2(cell.x, cell.y) * GameManager.CELL_SIZE

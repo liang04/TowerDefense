@@ -118,8 +118,12 @@ var towers_by_cell: Dictionary = {}
 ## 路径格子集合（不可种植）
 var path_cells: Dictionary = {}
 
-## 怪物行进路径点（像素坐标序列）
+## 路径点（像素坐标序列），有两套坐标，按用途分开、不再"加偏移又减偏移"：
+## - path_points：世界/屏幕坐标，含 MAP_OFFSET_Y。怪物、子弹、特效等实体走这套。
+## - path_points_local：地图局部坐标（0 基、不含偏移）。主场景 _draw 在施加了
+##   MAP_OFFSET_Y 变换后绘制地图，连线/起终点标记走这套，直接对应、无需再减偏移。
 var path_points: PackedVector2Array = []
+var path_points_local: PackedVector2Array = []
 
 ## ---- 初始化 ----
 func _ready() -> void:
@@ -213,6 +217,7 @@ func toggle_mute() -> void:
 func _init_path() -> void:
 	path_cells.clear()
 	path_points.clear()
+	path_points_local.clear()
 
 	var path_grid: Array = get_current_level().get("path", [])
 
@@ -220,12 +225,14 @@ func _init_path() -> void:
 	for cell in path_grid:
 		path_cells[cell] = true
 
-	# 转换为像素坐标（格子中心）
+	# 转换为像素坐标（格子中心）：局部坐标 0 基，世界坐标再叠加 MAP_OFFSET_Y
 	for cell in path_grid:
-		path_points.append(Vector2(
+		var local_center := Vector2(
 			cell.x * CELL_SIZE + CELL_SIZE * 0.5,
-			cell.y * CELL_SIZE + CELL_SIZE * 0.5 + MAP_OFFSET_Y
-		))
+			cell.y * CELL_SIZE + CELL_SIZE * 0.5
+		)
+		path_points_local.append(local_center)
+		path_points.append(local_center + Vector2(0, MAP_OFFSET_Y))
 
 func _apply_level_settings() -> void:
 	var level := get_current_level()
