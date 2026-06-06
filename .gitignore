@@ -6,6 +6,9 @@
 # Godot generated files
 *.translation
 
+# 资源导入元数据（本项目 SVG 以原始文本加载，不走资源导入系统，无需跟踪）
+*.import
+
 # Exported builds
 build/
 builds/
