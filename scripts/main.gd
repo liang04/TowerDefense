@@ -25,6 +25,8 @@ var _selected_cell: Vector2i = Vector2i(-1, -1)
 var _tutorial_active: bool = true
 var _tutorial_first_tower_built: bool = false
 var _recommended_cells: Array[Vector2i] = []
+var _map_background_texture: Texture2D = null
+var _map_background_path: String = ""
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -313,6 +315,11 @@ func _draw() -> void:
 
 func _draw_background() -> void:
 	var map_size := Vector2(GameManager.GRID_COLS * GameManager.CELL_SIZE, GameManager.GRID_ROWS * GameManager.CELL_SIZE)
+	var map_texture := _get_map_background_texture()
+	if map_texture:
+		draw_texture_rect(map_texture, Rect2(Vector2.ZERO, map_size), false)
+		return
+
 	var background_color := GameManager.get_level_background_color()
 	draw_rect(Rect2(Vector2.ZERO, map_size), background_color)
 
@@ -324,6 +331,27 @@ func _draw_background() -> void:
 			draw_rect(Rect2(cell_origin, Vector2(GameManager.CELL_SIZE, GameManager.CELL_SIZE)), tint)
 
 	_draw_ground_details(background_color)
+
+func _get_map_background_texture() -> Texture2D:
+	var path := GameManager.get_level_background_image_path()
+	if path.is_empty():
+		return null
+	if _map_background_texture and _map_background_path == path:
+		return _map_background_texture
+	if not FileAccess.file_exists(path):
+		return null
+
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
+		return null
+
+	var image := Image.new()
+	if image.load_png_from_buffer(bytes) != OK:
+		return null
+
+	_map_background_texture = ImageTexture.create_from_image(image)
+	_map_background_path = path
+	return _map_background_texture
 
 func _draw_ground_details(background_color: Color) -> void:
 	var grass_color := background_color.lightened(0.28)

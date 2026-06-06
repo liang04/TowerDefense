@@ -443,6 +443,9 @@ func get_level_background_color() -> Color:
 	var value = get_current_level().get("background", Color(0.11, 0.2, 0.13))
 	return value if value is Color else Color(0.11, 0.2, 0.13)
 
+func get_level_background_image_path() -> String:
+	return String(get_current_level().get("background_image", ""))
+
 func get_level_buildable_color() -> Color:
 	var value = get_current_level().get("buildable_color", Color(0.18, 0.55, 0.24, 0.22))
 	return value if value is Color else Color(0.18, 0.55, 0.24, 0.22)
