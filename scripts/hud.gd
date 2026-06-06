@@ -6,9 +6,6 @@ extends CanvasLayer
 ## ---- 常量 ----
 const MESSAGE_TIME := 3.0
 
-## ---- 状态 ----
-var selected_tower_type: String = "basic"
-
 ## ---- 节点引用 ----
 @onready var gold_label: Label = $MarginContainer/VBoxContainer/TopBar/GoldLabel
 @onready var lives_label: Label = $MarginContainer/VBoxContainer/TopBar/LivesLabel
@@ -124,7 +121,7 @@ func _update_all() -> void:
 	_update_selected_tower_text()
 	_update_speed_button(GameManager.get_game_speed())
 	set_start_wave_available(true)
-	message_label.text = "点击按钮或 1/2/3 选植物，左键种植或选中植物，可升级/铲除，T 切目标，F 快进"
+	message_label.text = "点击按钮或 1/2/3 选植物，左键种植或选中植物，可升级/铲除，T 切目标，F 快进，M 静音"
 
 func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = "阳光: %d" % new_gold

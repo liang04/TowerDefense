@@ -158,6 +158,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			GameManager.cycle_game_speed()
 		elif event.keycode == KEY_T:
 			_cycle_selected_tower_priority()
+		elif event.keycode == KEY_M:
+			_toggle_mute()
 		elif event.keycode == KEY_R:
 			_restart_game()
 
@@ -310,6 +312,13 @@ func _toggle_pause() -> void:
 		hud.show_pause_screen()
 	else:
 		hud.hide_pause_screen()
+
+## 静音开关：切换主音频总线（音效与背景音乐同时静音），状态跨场景保留
+func _toggle_mute() -> void:
+	var master_bus := AudioServer.get_bus_index("Master")
+	var muted := not AudioServer.is_bus_mute(master_bus)
+	AudioServer.set_bus_mute(master_bus, muted)
+	hud.show_message("已静音" if muted else "已取消静音")
 
 ## ---- 地图绘制 ----
 

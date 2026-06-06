@@ -105,7 +105,7 @@ var game_speed_index: int = 0
 var occupied_cells: Dictionary = {}
 var towers_by_cell: Dictionary = {}
 
-## 路径格子集合（不可放塔）
+## 路径格子集合（不可种植）
 var path_cells: Dictionary = {}
 
 ## 怪物行进路径点（像素坐标序列）
@@ -169,7 +169,7 @@ func _apply_level_settings() -> void:
 
 ## ---- 公共方法 ----
 
-## 尝试在指定网格位置放塔，成功返回 true
+## 尝试在指定网格位置种植，成功返回 true
 func try_place_tower(grid_col: int, grid_row: int, tower_type: String) -> bool:
 	var cell := Vector2i(grid_col, grid_row)
 	var cost := get_tower_cost(tower_type)
@@ -204,7 +204,7 @@ func get_tower_at(grid_col: int, grid_row: int) -> Node:
 		return tower
 	return null
 
-## 检查某格子是否可放塔
+## 检查某格子是否可种植
 func can_place_tower(grid_col: int, grid_row: int) -> bool:
 	var cell := Vector2i(grid_col, grid_row)
 	return cell not in occupied_cells and cell not in path_cells \
