@@ -1,3 +1,4 @@
+class_name Projectile
 extends Node2D
 
 var speed: float = 560.0
@@ -7,12 +8,12 @@ var slow_duration: float = 0.0
 var splash_radius: float = 0.0  # > 0 时为范围溅射，命中点半径内全体受伤
 var projectile_color: Color = Color(1.0, 0.85, 0.25)
 
-var _target: Node2D = null
+var _target: Enemy = null
 var _last_target_position: Vector2 = Vector2.ZERO
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 var _effects_container: Node = null
 
-func setup(start_position: Vector2, target: Node2D, damage_value: int, slow_value: float, slow_time: float, color_value: Color, splash_value: float = 0.0) -> void:
+func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value: float, slow_time: float, color_value: Color, splash_value: float = 0.0) -> void:
 	global_position = start_position
 	_target = target
 	damage = damage_value
@@ -42,7 +43,7 @@ func _process(delta: float) -> void:
 func _hit() -> void:
 	if splash_radius > 0.0:
 		_apply_splash_damage()
-	elif is_instance_valid(_target) and _target.has_method("take_damage"):
+	elif is_instance_valid(_target):
 		_damage_enemy(_target)
 		GameManager.request_sfx("hit")
 
@@ -53,22 +54,20 @@ func _hit() -> void:
 func _apply_splash_damage() -> void:
 	var hit_any := false
 	for node in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(node) or not (node is Node2D):
+		if not (node is Enemy):
 			continue
-		var enemy := node as Node2D
+		var enemy := node as Enemy
 		if global_position.distance_to(enemy.global_position) > splash_radius:
-			continue
-		if not enemy.has_method("take_damage"):
 			continue
 		_damage_enemy(enemy)
 		hit_any = true
 	if hit_any:
 		GameManager.request_sfx("hit")
 
-func _damage_enemy(enemy: Node) -> void:
-	enemy.call("take_damage", damage)
-	if slow_duration > 0.0 and enemy.has_method("apply_slow"):
-		enemy.call("apply_slow", slow_multiplier, slow_duration)
+func _damage_enemy(enemy: Enemy) -> void:
+	enemy.take_damage(damage)
+	if slow_duration > 0.0:
+		enemy.apply_slow(slow_multiplier, slow_duration)
 
 func _spawn_hit_effect() -> void:
 	var effects_container := _get_effects_container()
@@ -77,9 +76,9 @@ func _spawn_hit_effect() -> void:
 
 	# 溅射时爆炸范围与 AoE 半径一致，便于玩家直观感知打击范围
 	var effect_radius := splash_radius if splash_radius > 0.0 else 28.0
-	var effect := _hit_effect_scene.instantiate()
+	var effect := _hit_effect_scene.instantiate() as HitEffect
 	effects_container.add_child(effect)
-	effect.call("setup", global_position, projectile_color, effect_radius)
+	effect.setup(global_position, projectile_color, effect_radius)
 
 func _get_effects_container() -> Node:
 	if _effects_container and is_instance_valid(_effects_container):

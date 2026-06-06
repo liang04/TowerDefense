@@ -1,5 +1,6 @@
 ## 主场景脚本
 ## 处理地图绘制、塔放置输入、游戏流程
+class_name GameMain
 extends Node2D
 
 ## ---- 预加载 ----
@@ -10,14 +11,14 @@ var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 @onready var towers_container: Node2D = $Towers
 @onready var enemies_container: Node2D = $Enemies
 @onready var projectiles_container: Node2D = $Projectiles
-@onready var wave_spawner: Node = $WaveSpawner
-@onready var hud: Node = $HUD
+@onready var wave_spawner: WaveSpawner = $WaveSpawner
+@onready var hud: GameHUD = $HUD
 @onready var effects_container: Node2D = $Effects
 
 ## ---- 状态 ----
 var _hover_cell: Vector2i = Vector2i(-1, -1)  # 鼠标悬停的格子
 var _game_started: bool = false
-var _selected_tower: Node = null
+var _selected_tower: Tower = null
 var _selected_cell: Vector2i = Vector2i(-1, -1)
 var _tutorial_active: bool = true
 var _tutorial_first_tower_built: bool = false
@@ -42,7 +43,7 @@ func _init_tutorial() -> void:
 	_tutorial_active = true
 	_tutorial_first_tower_built = false
 	_recommended_cells = _find_recommended_build_cells()
-	hud.call("show_message", "先在高亮绿色格子建一座箭塔，再点击开始", true)
+	hud.show_message("先在高亮绿色格子建一座箭塔，再点击开始", true)
 
 func _find_recommended_build_cells() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -126,14 +127,14 @@ func _try_place_tower() -> void:
 	var col := _hover_cell.x
 	var row := _hover_cell.y
 
-	var existing_tower := GameManager.get_tower_at(col, row)
+	var existing_tower := GameManager.get_tower_at(col, row) as Tower
 	if existing_tower:
 		_select_existing_tower(existing_tower, Vector2i(col, row))
 		return
 
 	if GameManager.try_place_tower(col, row, GameManager.selected_tower_type):
-		var tower: Node2D = _tower_scene.instantiate()
-		tower.call("setup", GameManager.selected_tower_type, Vector2i(col, row))
+		var tower := _tower_scene.instantiate() as Tower
+		tower.setup(GameManager.selected_tower_type, Vector2i(col, row))
 		tower.global_position = GameManager.grid_to_pixel(col, row)
 		towers_container.add_child(tower)
 		GameManager.register_tower(col, row, tower)
@@ -141,7 +142,7 @@ func _try_place_tower() -> void:
 		_on_tutorial_tower_built()
 		queue_redraw()
 	else:
-		hud.call("show_message", _get_place_error_message(col, row))
+		hud.show_message(_get_place_error_message(col, row))
 
 func _get_place_error_message(col: int, row: int) -> String:
 	var cell := Vector2i(col, row)
@@ -162,74 +163,74 @@ func _select_tower_type(tower_type: String) -> void:
 	GameManager.set_selected_tower_type(tower_type)
 	_set_selected_tower(null)
 	_selected_cell = Vector2i(-1, -1)
-	hud.call("show_tower_details", null)
+	hud.show_tower_details(null)
 	queue_redraw()
 
-func _select_existing_tower(tower: Node, cell: Vector2i) -> void:
+func _select_existing_tower(tower: Tower, cell: Vector2i) -> void:
 	_set_selected_tower(tower)
 	_selected_cell = cell
-	hud.call("show_tower_details", tower)
+	hud.show_tower_details(tower)
 	queue_redraw()
 
 ## 切换当前选中的塔，并同步塔自身的选中态（仅选中塔绘制射程圈）
-func _set_selected_tower(tower: Node) -> void:
+func _set_selected_tower(tower: Tower) -> void:
 	if _selected_tower and is_instance_valid(_selected_tower) and _selected_tower != tower:
-		_selected_tower.call("set_selected", false)
+		_selected_tower.set_selected(false)
 	_selected_tower = tower
 	if tower and is_instance_valid(tower):
-		tower.call("set_selected", true)
+		tower.set_selected(true)
 
 func _upgrade_selected_tower() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
-		hud.call("show_message", "先点击选择一座塔")
+		hud.show_message("先点击选择一座塔")
 		return
-	if not _selected_tower.call("can_upgrade"):
-		hud.call("show_message", "这座塔已经满级")
+	if not _selected_tower.can_upgrade():
+		hud.show_message("这座塔已经满级")
 		return
 
-	var cost := int(_selected_tower.call("get_upgrade_cost"))
+	var cost := int(_selected_tower.get_upgrade_cost())
 	if not GameManager.spend_gold(cost):
-		hud.call("show_message", "金币不足，升级需要 %d" % cost)
+		hud.show_message("金币不足，升级需要 %d" % cost)
 		return
 
-	_selected_tower.call("upgrade")
+	_selected_tower.upgrade()
 	GameManager.request_sfx("upgrade")
-	hud.call("show_tower_details", _selected_tower)
+	hud.show_tower_details(_selected_tower)
 	queue_redraw()
 
 func _cycle_selected_tower_priority() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
-		hud.call("show_message", "先点击选择一座塔")
+		hud.show_message("先点击选择一座塔")
 		return
-	_selected_tower.call("cycle_target_priority")
-	hud.call("show_tower_details", _selected_tower)
-	hud.call("show_message", "目标优先级：%s" % String(_selected_tower.call("get_target_priority_label")))
+	_selected_tower.cycle_target_priority()
+	hud.show_tower_details(_selected_tower)
+	hud.show_message("目标优先级：%s" % String(_selected_tower.get_target_priority_label()))
 
 func _sell_selected_tower() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
-		hud.call("show_message", "先点击选择一座塔")
+		hud.show_message("先点击选择一座塔")
 		return
 
-	var refund := int(_selected_tower.call("get_sell_value"))
+	var refund := int(_selected_tower.get_sell_value())
 	GameManager.add_gold(refund)
 	GameManager.request_sfx("sell")
 	GameManager.remove_tower(_selected_cell.x, _selected_cell.y)
 	_selected_tower.queue_free()
 	_selected_tower = null
 	_selected_cell = Vector2i(-1, -1)
-	hud.call("show_tower_details", null)
-	hud.call("show_message", "出售成功，返还 %d 金币" % refund)
+	hud.show_tower_details(null)
+	hud.show_message("出售成功，返还 %d 金币" % refund)
 	queue_redraw()
 
 func _start_game() -> void:
 	if _game_started or GameManager.is_game_over:
 		return
 	_tutorial_active = false
-	hud.call("hide_overlay")
+	hud.hide_overlay()
 	_game_started = true
-	hud.call("set_start_wave_available", false)
-	hud.call("set_pause_button_paused", false)
-	wave_spawner.call("start_next_wave")
+	hud.set_start_wave_available(false)
+	hud.set_pause_button_paused(false)
+	wave_spawner.start_next_wave()
 	queue_redraw()
 
 func _restart_game() -> void:
@@ -248,16 +249,16 @@ func _reload_scene_for_level() -> void:
 	_selected_tower = null
 	_selected_cell = Vector2i(-1, -1)
 	_init_tutorial()
-	hud.call("hide_overlay")
-	hud.call("set_start_wave_available", true)
-	hud.call("set_pause_button_paused", false)
+	hud.hide_overlay()
+	hud.set_start_wave_available(true)
+	hud.set_pause_button_paused(false)
 	queue_redraw()
 
 func _on_tutorial_tower_built() -> void:
 	if not _tutorial_active or _tutorial_first_tower_built:
 		return
 	_tutorial_first_tower_built = true
-	hud.call("show_message", "很好。可以再补一座塔，或点击顶部“开始”迎战第一波", true)
+	hud.show_message("很好。可以再补一座塔，或点击顶部“开始”迎战第一波", true)
 	queue_redraw()
 
 func _toggle_pause() -> void:
@@ -266,9 +267,9 @@ func _toggle_pause() -> void:
 	var tree := get_tree()
 	tree.paused = not tree.paused
 	if tree.paused:
-		hud.call("show_pause_screen")
+		hud.show_pause_screen()
 	else:
-		hud.call("hide_pause_screen")
+		hud.hide_pause_screen()
 
 ## ---- 地图绘制 ----
 
@@ -486,10 +487,10 @@ func _on_game_over() -> void:
 func _on_life_lost(_new_lives: int) -> void:
 	if GameManager.path_points.is_empty():
 		return
-	var effect := _hit_effect_scene.instantiate()
+	var effect := _hit_effect_scene.instantiate() as HitEffect
 	effects_container.add_child(effect)
-	effect.call("setup", GameManager.path_points[GameManager.path_points.size() - 1], Color(1.0, 0.15, 0.12), 42.0)
-	hud.call("show_message", "敌人突破防线，生命 -1")
+	effect.setup(GameManager.path_points[GameManager.path_points.size() - 1], Color(1.0, 0.15, 0.12), 42.0)
+	hud.show_message("敌人突破防线，生命 -1")
 
 func _on_all_waves_completed() -> void:
 	# 胜利！

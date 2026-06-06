@@ -1,5 +1,6 @@
 ## HUD 界面脚本
 ## 显示金币、生命、波次信息，处理塔选择
+class_name GameHUD
 extends CanvasLayer
 
 ## ---- 常量 ----
@@ -49,7 +50,10 @@ var selected_tower_type: String = "basic"
 
 var _pending_level_index: int = 0
 var _tower_buttons: Dictionary = {}
-var _selected_tower_for_actions: Node = null
+var _selected_tower_for_actions: Tower = null
+
+## 主场景（HUD 的父节点），用于回调游戏流程方法
+@onready var _main: GameMain = get_parent() as GameMain
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -207,21 +211,21 @@ func _update_tower_buttons() -> void:
 		button.text = "%s%s %d" % [prefix, String(config["name"]), cost]
 		button.disabled = not is_selected and not GameManager.can_afford(cost)
 
-func show_tower_details(tower: Node) -> void:
+func show_tower_details(tower: Tower) -> void:
 	if not tower or not is_instance_valid(tower):
 		_update_selected_tower_text()
 		return
 
 	_selected_tower_for_actions = tower
 	var upgrade_text := "满级"
-	if tower.call("can_upgrade"):
-		upgrade_text = "升级: %d 金币" % int(tower.call("get_upgrade_cost"))
+	if tower.can_upgrade():
+		upgrade_text = "升级: %d 金币" % tower.get_upgrade_cost()
 
 	info_label.text = "选中: %s | %s | 目标: %s | 出售: %d 金币" % [
-		String(tower.call("get_display_name")),
-		String(tower.call("get_stats_text")) + " | " + upgrade_text,
-		String(tower.call("get_target_priority_label")),
-		int(tower.call("get_sell_value")),
+		tower.get_display_name(),
+		tower.get_stats_text() + " | " + upgrade_text,
+		tower.get_target_priority_label(),
+		tower.get_sell_value(),
 	]
 	_update_action_buttons()
 
@@ -236,14 +240,14 @@ func _update_action_buttons() -> void:
 		sell_button.disabled = true
 		return
 
-	priority_button.text = "目标: %s" % String(_selected_tower_for_actions.call("get_target_priority_label"))
+	priority_button.text = "目标: %s" % _selected_tower_for_actions.get_target_priority_label()
 	priority_button.disabled = false
 
-	var can_upgrade: bool = _selected_tower_for_actions.call("can_upgrade")
-	var upgrade_cost := int(_selected_tower_for_actions.call("get_upgrade_cost"))
+	var can_upgrade := _selected_tower_for_actions.can_upgrade()
+	var upgrade_cost := _selected_tower_for_actions.get_upgrade_cost()
 	upgrade_button.text = "升级 %d" % upgrade_cost if can_upgrade else "已满级"
 	upgrade_button.disabled = not can_upgrade or not GameManager.can_afford(upgrade_cost)
-	sell_button.text = "出售 %d" % int(_selected_tower_for_actions.call("get_sell_value"))
+	sell_button.text = "出售 %d" % _selected_tower_for_actions.get_sell_value()
 	sell_button.disabled = false
 
 func set_start_wave_available(available: bool) -> void:
@@ -316,22 +320,22 @@ func show_result_screen(won: bool) -> void:
 
 func _on_start_pressed() -> void:
 	hide_overlay()
-	get_parent().call("_start_game")
+	_main._start_game()
 
 func _on_tower_button_pressed(tower_type: String) -> void:
-	get_parent().call("_select_tower_type", tower_type)
+	_main._select_tower_type(tower_type)
 
 func _on_priority_pressed() -> void:
-	get_parent().call("_cycle_selected_tower_priority")
+	_main._cycle_selected_tower_priority()
 
 func _on_upgrade_pressed() -> void:
-	get_parent().call("_upgrade_selected_tower")
+	_main._upgrade_selected_tower()
 
 func _on_sell_pressed() -> void:
-	get_parent().call("_sell_selected_tower")
+	_main._sell_selected_tower()
 
 func _on_pause_pressed() -> void:
-	get_parent().call("_toggle_pause")
+	_main._toggle_pause()
 
 func _on_speed_pressed() -> void:
 	GameManager.cycle_game_speed()
@@ -358,12 +362,12 @@ func _on_resume_pressed() -> void:
 
 func _on_restart_pressed() -> void:
 	get_tree().paused = false
-	get_parent().call("_restart_game")
+	_main._restart_game()
 
 func _on_next_level_pressed() -> void:
 	get_tree().paused = false
 	if GameManager.advance_to_next_level():
-		get_parent().call("_reload_scene_for_level")
+		_main._reload_scene_for_level()
 
 func _on_prev_level_pressed() -> void:
 	_pending_level_index = max(_pending_level_index - 1, 0)
@@ -376,7 +380,7 @@ func _on_next_select_level_pressed() -> void:
 func _on_confirm_level_pressed() -> void:
 	get_tree().paused = false
 	if GameManager.set_level(_pending_level_index):
-		get_parent().call("_reload_scene_for_level")
+		_main._reload_scene_for_level()
 
 func _on_cancel_level_pressed() -> void:
 	hide_overlay()

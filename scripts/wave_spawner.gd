@@ -1,5 +1,6 @@
 ## 波次生成器
 ## 按波次配置生成敌人，管理波次节奏
+class_name WaveSpawner
 extends Node
 
 ## ---- 信号 ----
@@ -64,10 +65,9 @@ func _spawn_enemy() -> void:
 		return
 
 	var wave_data := _get_current_spawn_data()
-	var enemy := _enemy_scene.instantiate()
+	var enemy := _enemy_scene.instantiate() as Enemy
 
-	if enemy.has_method("setup"):
-		enemy.call("setup", wave_data)
+	enemy.setup(wave_data)
 
 	enemies_container.add_child(enemy)
 	_enemies_alive += 1

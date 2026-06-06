@@ -1,3 +1,4 @@
+class_name HitEffect
 extends Node2D
 
 var effect_color: Color = Color(1.0, 0.85, 0.25)

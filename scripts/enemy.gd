@@ -1,5 +1,6 @@
 ## 敌人脚本
 ## 沿 GameManager 中定义的路径点移动，到达终点扣玩家生命
+class_name Enemy
 extends Node2D
 
 const ENEMY_ART_PATHS := {

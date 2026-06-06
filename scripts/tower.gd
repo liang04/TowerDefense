@@ -1,5 +1,6 @@
 ## 防御塔脚本
 ## 自动攻击范围内最近的敌人
+class_name Tower
 extends Node2D
 
 var _projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
@@ -40,7 +41,7 @@ const TARGET_PRIORITY_LABELS := {
 
 ## ---- 内部状态 ----
 var _cooldown_timer: float = 0.0
-var _current_target: Node2D = null
+var _current_target: Enemy = null
 var _shot_flash_timer: float = 0.0
 var _scan_timer: float = 0.0
 var _selected: bool = false
@@ -87,15 +88,15 @@ func set_selected(value: bool) -> void:
 ## ---- 内部方法 ----
 
 func _select_target() -> void:
-	var best_target: Node2D = null
+	var best_target: Enemy = null
 	var best_score: float = -INF
 	var best_distance: float = INF
 
 	for node in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(node) or not (node is Node2D):
+		if not (node is Enemy):
 			continue
 
-		var enemy := node as Node2D
+		var enemy := node as Enemy
 		var distance := global_position.distance_to(enemy.global_position)
 		if distance > attack_range:
 			continue
@@ -110,20 +111,16 @@ func _select_target() -> void:
 	_current_target = best_target
 
 ## 根据当前优先级为候选敌人打分，分数越高越优先
-func _priority_score(enemy: Node2D, distance: float) -> float:
+func _priority_score(enemy: Enemy, distance: float) -> float:
 	match target_priority:
 		"nearest":
 			return -distance
 		"strongest":
-			var hp = enemy.get("hp")
-			return float(hp) if hp != null else 0.0
+			return float(enemy.hp)
 		"fastest":
-			var spd = enemy.get("speed")
-			return float(spd) if spd != null else 0.0
+			return enemy.speed
 		_:  # progress：路径进度最远（默认）
-			if enemy.has_method("get_path_progress"):
-				return float(enemy.call("get_path_progress"))
-			return 0.0
+			return enemy.get_path_progress()
 
 ## 循环切换目标优先级，并立即按新优先级重选目标
 func cycle_target_priority() -> void:
@@ -135,7 +132,7 @@ func cycle_target_priority() -> void:
 func get_target_priority_label() -> String:
 	return String(TARGET_PRIORITY_LABELS.get(target_priority, "前排"))
 
-func _attack(target: Node2D) -> void:
+func _attack(target: Enemy) -> void:
 	if not is_instance_valid(target):
 		return
 
@@ -143,9 +140,9 @@ func _attack(target: Node2D) -> void:
 	if projectiles_container == null:
 		return
 
-	var projectile := _projectile_scene.instantiate()
+	var projectile := _projectile_scene.instantiate() as Projectile
 	projectiles_container.add_child(projectile)
-	projectile.call("setup", global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius)
+	projectile.setup(global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius)
 	GameManager.request_sfx("shoot")
 	_shot_flash_timer = 0.12
 
