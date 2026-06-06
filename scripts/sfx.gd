@@ -17,16 +17,27 @@ const SFX_VOLUME_DB := -8.0
 const BGM_VOLUME_DB := -14.0
 
 ## 合成音回退参数（无音效文件时使用）
+## 字段：wave(sine/triangle/square/saw/noise)、freq/freq_end(扫频)、sequence(多音阶琶音)、
+##       duration、volume、noise(白噪混入比 0~1)、decay(指数衰减率)、pitch_var(每次播放随机变调幅度)
 var _profiles: Dictionary = {
-	"shoot": {"frequency": 760.0, "duration": 0.055, "volume": 0.28},
-	"hit": {"frequency": 360.0, "duration": 0.07, "volume": 0.22},
-	"kill": {"frequency": 920.0, "duration": 0.11, "volume": 0.24},
-	"leak": {"frequency": 150.0, "duration": 0.18, "volume": 0.3},
-	"wave": {"frequency": 520.0, "duration": 0.16, "volume": 0.22},
-	"upgrade": {"frequency": 1040.0, "duration": 0.13, "volume": 0.24},
-	"sell": {"frequency": 300.0, "duration": 0.1, "volume": 0.2},
-	"win": {"frequency": 880.0, "duration": 0.28, "volume": 0.26},
-	"game_over": {"frequency": 95.0, "duration": 0.32, "volume": 0.32},
+	# 豌豆开火：向下"啾"一声 + 一点噪声咔哒
+	"shoot": {"wave": "triangle", "freq": 860.0, "freq_end": 520.0, "duration": 0.09, "volume": 0.30, "noise": 0.06, "decay": 11.0, "pitch_var": 0.09},
+	# 命中：噪声为主的短促"啪"
+	"hit": {"wave": "triangle", "freq": 300.0, "freq_end": 170.0, "duration": 0.08, "volume": 0.30, "noise": 0.45, "decay": 16.0, "pitch_var": 0.12},
+	# 击退僵尸：明亮的两音上扬
+	"kill": {"wave": "triangle", "sequence": [640.0, 880.0], "duration": 0.14, "volume": 0.26, "decay": 9.0, "pitch_var": 0.06},
+	# 漏怪：低沉下滑
+	"leak": {"wave": "sine", "freq": 330.0, "freq_end": 110.0, "duration": 0.22, "volume": 0.32, "decay": 5.0, "pitch_var": 0.0},
+	# 新波来袭：上扬警示
+	"wave": {"wave": "triangle", "sequence": [440.0, 660.0], "duration": 0.20, "volume": 0.24, "decay": 6.0, "pitch_var": 0.0},
+	# 升级：三音上行琶音
+	"upgrade": {"wave": "triangle", "sequence": [660.0, 880.0, 1120.0], "duration": 0.21, "volume": 0.24, "decay": 7.0, "pitch_var": 0.0},
+	# 铲除：短促下滑
+	"sell": {"wave": "triangle", "freq": 520.0, "freq_end": 300.0, "duration": 0.12, "volume": 0.22, "decay": 9.0, "pitch_var": 0.0},
+	# 胜利：C-E-G-C 上行小号
+	"win": {"wave": "triangle", "sequence": [523.0, 659.0, 784.0, 1047.0], "duration": 0.5, "volume": 0.26, "decay": 4.0, "pitch_var": 0.0},
+	# 失败：三音下行
+	"game_over": {"wave": "triangle", "sequence": [330.0, 247.0, 165.0], "duration": 0.45, "volume": 0.32, "decay": 4.0, "pitch_var": 0.0},
 }
 
 var _active_players: Array[AudioStreamPlayer] = []
@@ -48,6 +59,11 @@ func _on_sfx_requested(sfx_name: String) -> void:
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
 	player.volume_db = SFX_VOLUME_DB
+	# 每次播放随机微调音高，避免重复音效（如连续开火）听起来完全一致；
+	# 同样作用于真实音频文件
+	var pitch_var := float((_profiles.get(sfx_name, {}) as Dictionary).get("pitch_var", 0.05))
+	if pitch_var > 0.0:
+		player.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
 	add_child(player)
 	_active_players.append(player)
 	player.finished.connect(func() -> void:
@@ -70,12 +86,7 @@ func _get_sfx_stream(sfx_name: String) -> AudioStream:
 func _tone_for(sfx_name: String) -> AudioStream:
 	if not (sfx_name in _profiles):
 		return null
-	var profile: Dictionary = _profiles[sfx_name]
-	return _make_tone(
-		float(profile["frequency"]),
-		float(profile["duration"]),
-		float(profile["volume"])
-	)
+	return _synthesize(_profiles[sfx_name])
 
 ## ---- 背景音乐 ----
 
@@ -120,25 +131,27 @@ func _exit_tree() -> void:
 			player.queue_free()
 	_active_players.clear()
 
-## ---- 合成音回退 ----
+## ---- 合成音回退（小型合成器）----
 
-func _make_tone(frequency: float, duration: float, volume: float) -> AudioStreamWAV:
-	var sample_count := int(float(MIX_RATE) * duration)
+## 根据 profile 合成一段音频：支持扫频单音或 sequence 琶音
+func _synthesize(profile: Dictionary) -> AudioStreamWAV:
+	var duration := float(profile.get("duration", 0.1))
+	var sample_count := maxi(int(float(MIX_RATE) * duration), 1)
 	var bytes := PackedByteArray()
 	bytes.resize(sample_count * 2)
 
-	for i in range(sample_count):
-		var t := float(i) / float(MIX_RATE)
-		var fade_in := clampf(t / 0.01, 0.0, 1.0)
-		var fade_out := clampf((duration - t) / 0.04, 0.0, 1.0)
-		var envelope := minf(fade_in, fade_out)
-		var sample := sin(TAU * frequency * t) * volume * envelope
-		var value := int(clampf(sample, -1.0, 1.0) * 32767.0)
-		if value < 0:
-			value += 65536
-
-		bytes[i * 2] = value & 0xff
-		bytes[i * 2 + 1] = (value >> 8) & 0xff
+	var sequence: Array = profile.get("sequence", [])
+	if sequence.is_empty():
+		var freq := float(profile.get("freq", 600.0))
+		_render_segment(bytes, 0, sample_count, profile, freq, float(profile.get("freq_end", freq)))
+	else:
+		# 把总时长均分给每个音，逐段独立拨弦式渲染
+		var seg_len := int(sample_count / sequence.size())
+		for n in range(sequence.size()):
+			var start := n * seg_len
+			var count := seg_len if n < sequence.size() - 1 else sample_count - start
+			var note := float(sequence[n])
+			_render_segment(bytes, start, count, profile, note, note)
 
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
@@ -146,3 +159,45 @@ func _make_tone(frequency: float, duration: float, volume: float) -> AudioStream
 	stream.stereo = false
 	stream.data = bytes
 	return stream
+
+## 把一段振荡器+包络写入 bytes[start..start+count)（16-bit PCM）
+func _render_segment(bytes: PackedByteArray, start: int, count: int, profile: Dictionary, freq_start: float, freq_end: float) -> void:
+	var wave := String(profile.get("wave", "sine"))
+	var volume := float(profile.get("volume", 0.25))
+	var noise_amount := float(profile.get("noise", 0.0))
+	var attack := float(profile.get("attack", 0.006))
+	var decay := float(profile.get("decay", 8.0))
+	var seg_duration := maxf(float(count) / float(MIX_RATE), 0.0001)
+	var phase := 0.0
+
+	for i in range(count):
+		var t := float(i) / float(MIX_RATE)
+		var freq := lerpf(freq_start, freq_end, t / seg_duration)
+		phase += TAU * freq / float(MIX_RATE)
+		var osc := _wave_sample(wave, phase)
+		if noise_amount > 0.0:
+			osc = lerpf(osc, randf() * 2.0 - 1.0, noise_amount)
+
+		# 包络：起音 + 指数衰减 + 收尾淡出（避免段间咔哒）
+		var release := clampf((seg_duration - t) / 0.012, 0.0, 1.0)
+		var envelope := clampf(t / attack, 0.0, 1.0) * exp(-t * decay) * release
+		var value := int(clampf(osc * volume * envelope, -1.0, 1.0) * 32767.0)
+		if value < 0:
+			value += 65536
+
+		var idx := (start + i) * 2
+		bytes[idx] = value & 0xff
+		bytes[idx + 1] = (value >> 8) & 0xff
+
+func _wave_sample(wave: String, phase: float) -> float:
+	match wave:
+		"square":
+			return 1.0 if sin(phase) >= 0.0 else -1.0
+		"triangle":
+			return asin(sin(phase)) * (2.0 / PI)
+		"saw":
+			return fposmod(phase / TAU, 1.0) * 2.0 - 1.0
+		"noise":
+			return randf() * 2.0 - 1.0
+		_:
+			return sin(phase)
