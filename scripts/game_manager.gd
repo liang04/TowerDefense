@@ -54,6 +54,7 @@ var tower_configs: Dictionary = {
 		"cooldown": 0.65,
 		"slow_multiplier": 1.0,
 		"slow_duration": 0.0,
+		"splash_radius": 0.0,
 		"color": Color(0.2, 0.45, 0.95),
 		"description": "均衡、便宜、射速快",
 	},
@@ -65,8 +66,9 @@ var tower_configs: Dictionary = {
 		"cooldown": 1.25,
 		"slow_multiplier": 1.0,
 		"slow_duration": 0.0,
+		"splash_radius": 58.0,
 		"color": Color(0.9, 0.35, 0.18),
-		"description": "伤害高，射速慢",
+		"description": "伤害高、射速慢、范围溅射",
 	},
 	"frost": {
 		"name": "冰塔",
@@ -76,6 +78,7 @@ var tower_configs: Dictionary = {
 		"cooldown": 0.9,
 		"slow_multiplier": 0.55,
 		"slow_duration": 1.4,
+		"splash_radius": 0.0,
 		"color": Color(0.25, 0.75, 0.95),
 		"description": "伤害低，可减速",
 	},
@@ -209,17 +212,22 @@ func get_scaled_tower_stats(tower_type: String, tower_level: int = 1) -> Diction
 		"cooldown": maxf(float(config["cooldown"]) * cooldown_scale, MIN_COOLDOWN),
 		"slow_multiplier": float(config["slow_multiplier"]),
 		"slow_duration": float(config["slow_duration"]),
+		"splash_radius": float(config.get("splash_radius", 0.0)),
 	}
 
 func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
 	var stats := get_scaled_tower_stats(tower_type, tower_level)
 	var slow_multiplier := float(stats["slow_multiplier"])
 	var slow_duration := float(stats["slow_duration"])
+	var splash_radius := float(stats["splash_radius"])
 	var parts: Array[String] = [
 		"伤害 %d" % int(stats["damage"]),
 		"射程 %d" % int(round(float(stats["range"]))),
 		"间隔 %.2fs" % float(stats["cooldown"]),
 	]
+
+	if splash_radius > 0.0:
+		parts.append("溅射 R%d" % int(round(splash_radius)))
 
 	if slow_duration > 0.0 and slow_multiplier < 1.0:
 		parts.append("减速 %d%% %.1fs" % [int(round((1.0 - slow_multiplier) * 100.0)), slow_duration])

@@ -23,6 +23,7 @@ var attack_range: float = 160.0   # 像素
 var attack_cooldown: float = 1.0  # 秒
 var slow_multiplier: float = 1.0
 var slow_duration: float = 0.0
+var splash_radius: float = 0.0
 var body_color: Color = Color(0.2, 0.45, 0.95)
 
 ## 目标重选间隔（秒）：避免每帧对全体敌人做一次全量扫描
@@ -110,7 +111,7 @@ func _attack(target: Node2D) -> void:
 
 	var projectile := _projectile_scene.instantiate()
 	projectiles_container.add_child(projectile)
-	projectile.call("setup", global_position, target, attack_damage, slow_multiplier, slow_duration, body_color)
+	projectile.call("setup", global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius)
 	GameManager.request_sfx("shoot")
 	_shot_flash_timer = 0.12
 
@@ -191,6 +192,7 @@ func _apply_config() -> void:
 	attack_cooldown = float(stats["cooldown"])
 	slow_multiplier = float(stats["slow_multiplier"])
 	slow_duration = float(stats["slow_duration"])
+	splash_radius = float(stats["splash_radius"])
 	var color_value = config["color"]
 	if color_value is Color:
 		body_color = color_value
