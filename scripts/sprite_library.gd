@@ -21,6 +21,7 @@ const ENEMY_TUNING := {
 	"grunt": {"fps": 8.0, "scale": 0.55},
 	"runner": {"fps": 12.0, "scale": 0.5},
 	"tank": {"fps": 6.0, "scale": 0.65},
+	"boss": {"fps": 6.0, "scale": 1.05},
 }
 const TOWER_TUNING := {
 	"arrow": {"fps": 6.0, "scale": 0.7},

@@ -35,8 +35,14 @@ func _ready() -> void:
 	if _waypoints.size() > 0:
 		global_position = _waypoints[0]
 		_current_wp_index = 1
-	add_child(SpriteLibrary.make_shadow(15.0, 6.0, 16.0))
+	var is_boss := enemy_type == "boss"
+	if is_boss:
+		add_child(SpriteLibrary.make_shadow(26.0, 10.0, 24.0))
+	else:
+		add_child(SpriteLibrary.make_shadow(15.0, 6.0, 16.0))
 	_setup_sprite()
+	if is_boss:
+		GameManager.notify_boss_incoming()
 
 ## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
 func _setup_sprite() -> void:
@@ -194,14 +200,14 @@ func _draw() -> void:
 	if _slow_timer > 0.0:
 		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
 
-	# 血量条背景
-	var bar_bg := Rect2(-15, -22, 30, 5)
-	draw_rect(bar_bg, Color(0.3, 0.3, 0.3))
-
-	# 血量条前景
+	# 血量条（Boss 更宽更高、位置上移，以匹配更大的体型）
+	var is_boss := enemy_type == "boss"
+	var bar_half := 27.0 if is_boss else 15.0
+	var bar_h := 6.0 if is_boss else 5.0
+	var bar_y := -40.0 if is_boss else -22.0
+	draw_rect(Rect2(-bar_half, bar_y, bar_half * 2.0, bar_h), Color(0.3, 0.3, 0.3))
 	var hp_ratio := float(hp) / float(max_hp)
-	var bar_fg := Rect2(-15, -22, 30.0 * hp_ratio, 5)
-	draw_rect(bar_fg, Color(0.1, 0.9, 0.1))
+	draw_rect(Rect2(-bar_half, bar_y, bar_half * 2.0 * hp_ratio, bar_h), Color(0.1, 0.9, 0.1))
 
 ## SVG / 程序化本体绘制（无 PNG 素材时的回退渲染）
 func _draw_body() -> void:
@@ -217,6 +223,10 @@ func _draw_body() -> void:
 	if _hit_flash_timer > 0.0:
 		color = color.lerp(Color.WHITE, 0.65)
 
+	if enemy_type == "boss":
+		_draw_boss(color)
+		return
+
 	var art_texture := _get_enemy_art_texture()
 	if art_texture:
 		var size := Vector2(44, 44) if enemy_type != "tank" else Vector2(52, 52)
@@ -228,3 +238,17 @@ func _draw_body() -> void:
 		draw_polygon(runner_shape, PackedColorArray([color]))
 	else:
 		draw_rect(Rect2(-15, -15, 30, 30), color)
+
+## 僵尸王本体：大号深色躯干 + 王冠尖刺 + 发光双眼
+func _draw_boss(color: Color) -> void:
+	draw_circle(Vector2.ZERO, 28.0, color.darkened(0.3))
+	draw_circle(Vector2.ZERO, 24.0, color)
+	draw_circle(Vector2(-2, -3), 11.0, color.lightened(0.22))
+	var crown := color.lightened(0.4)
+	for i in range(3):
+		var cx := float(i - 1) * 12.0
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(cx - 6.0, -22.0), Vector2(cx + 6.0, -22.0), Vector2(cx, -34.0)
+		]), crown)
+	draw_circle(Vector2(-8, -3), 3.5, Color(1.0, 0.9, 0.2))
+	draw_circle(Vector2(8, -3), 3.5, Color(1.0, 0.9, 0.2))

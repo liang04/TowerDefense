@@ -38,6 +38,8 @@ var _profiles: Dictionary = {
 	"win": {"wave": "triangle", "sequence": [523.0, 659.0, 784.0, 1047.0], "duration": 0.5, "volume": 0.26, "decay": 4.0, "pitch_var": 0.0},
 	# 失败：三音下行
 	"game_over": {"wave": "triangle", "sequence": [330.0, 247.0, 165.0], "duration": 0.45, "volume": 0.32, "decay": 4.0, "pitch_var": 0.0},
+	# Boss 出场：低沉嗡鸣警示
+	"boss": {"wave": "saw", "freq": 130.0, "freq_end": 90.0, "duration": 0.55, "volume": 0.32, "decay": 2.5, "pitch_var": 0.0},
 }
 
 var _active_players: Array[AudioStreamPlayer] = []

@@ -44,6 +44,10 @@ static func get_levels() -> Array[Dictionary]:
 					{"count": 6, "interval": 0.8, "type": "tank", "hp": 190, "speed": 90.0, "reward": 28, "color": Color(0.62, 0.55, 0.48)},
 					{"count": 8, "interval": 0.45, "type": "grunt", "hp": 75, "speed": 140.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
 				]},
+				{"groups": [
+					{"count": 6, "interval": 0.5, "type": "grunt", "hp": 70, "speed": 135.0, "reward": 12, "color": Color(0.25, 0.8, 0.25)},
+					{"count": 1, "interval": 1.0, "type": "boss", "hp": 900, "speed": 68.0, "reward": 100, "color": Color(0.5, 0.15, 0.55)},
+				]},
 			],
 		},
 		{
@@ -79,6 +83,10 @@ static func get_levels() -> Array[Dictionary]:
 				{"groups": [
 					{"count": 14, "interval": 0.38, "type": "grunt", "hp": 76, "speed": 145.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
 					{"count": 7, "interval": 0.7, "type": "tank", "hp": 210, "speed": 92.0, "reward": 30, "color": Color(0.62, 0.55, 0.48)},
+				]},
+				{"groups": [
+					{"count": 8, "interval": 0.4, "type": "runner", "hp": 50, "speed": 200.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 1, "interval": 1.0, "type": "boss", "hp": 1300, "speed": 72.0, "reward": 130, "color": Color(0.5, 0.15, 0.55)},
 				]},
 			],
 		},
@@ -119,6 +127,10 @@ static func get_levels() -> Array[Dictionary]:
 				{"groups": [
 					{"count": 8, "interval": 0.32, "type": "runner", "hp": 62, "speed": 228.0, "reward": 18, "color": Color(0.95, 0.9, 0.25)},
 					{"count": 9, "interval": 0.55, "type": "tank", "hp": 270, "speed": 102.0, "reward": 36, "color": Color(0.62, 0.55, 0.48)},
+				]},
+				{"groups": [
+					{"count": 6, "interval": 0.5, "type": "tank", "hp": 200, "speed": 95.0, "reward": 25, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 2, "interval": 2.0, "type": "boss", "hp": 1800, "speed": 76.0, "reward": 170, "color": Color(0.5, 0.15, 0.55)},
 				]},
 			],
 		},

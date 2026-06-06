@@ -20,6 +20,7 @@ signal game_speed_changed(speed: float)
 signal enemy_killed(world_pos: Vector2, reward: int, color: Color)
 signal audio_settings_changed(volume: float, muted: bool)
 signal difficulty_changed(index: int, difficulty_name: String)
+signal boss_incoming(boss_name: String)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -57,12 +58,14 @@ const ENEMY_TYPE_NAMES := {
 	"grunt": "普通僵尸",
 	"runner": "疾跑僵尸",
 	"tank": "铁桶僵尸",
+	"boss": "僵尸王",
 }
 
 const ENEMY_TYPE_ADVICE := {
 	"grunt": "豌豆射手",
 	"runner": "寒冰花",
 	"tank": "爆裂果",
+	"boss": "爆裂果",
 }
 
 var tower_configs: Dictionary = {
@@ -449,6 +452,11 @@ func _unlock_next_level() -> void:
 
 func request_sfx(sfx_name: String) -> void:
 	sfx_requested.emit(sfx_name)
+
+## Boss 出场：播放低沉警示音并通知 HUD
+func notify_boss_incoming() -> void:
+	request_sfx("boss")
+	boss_incoming.emit(String(ENEMY_TYPE_NAMES.get("boss", "Boss")))
 
 ## 当前游戏速度倍率
 func get_game_speed() -> float:

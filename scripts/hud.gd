@@ -76,6 +76,7 @@ func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.game_speed_changed.connect(_on_game_speed_changed)
 	GameManager.audio_settings_changed.connect(_on_audio_settings_changed)
+	GameManager.boss_incoming.connect(_on_boss_incoming)
 
 	start_button.pressed.connect(_on_start_pressed)
 	level_select_button.pressed.connect(_on_level_select_pressed)
@@ -391,6 +392,9 @@ func _on_mute_pressed() -> void:
 func _on_audio_settings_changed(volume: float, muted: bool) -> void:
 	volume_slider.set_value_no_signal(volume)
 	mute_button.text = "音效: 关" if muted else "音效: 开"
+
+func _on_boss_incoming(boss_name: String) -> void:
+	show_message("%s 降临！全力防守！" % boss_name)
 
 func _on_game_speed_changed(speed: float) -> void:
 	_update_speed_button(speed)
