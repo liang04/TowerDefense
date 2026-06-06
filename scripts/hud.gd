@@ -28,6 +28,7 @@ var selected_tower_type: String = "basic"
 @onready var level_select_button: Button = $MarginContainer/VBoxContainer/TopBar/LevelSelectButton
 @onready var start_wave_button: Button = $MarginContainer/VBoxContainer/TopBar/StartWaveButton
 @onready var pause_button: Button = $MarginContainer/VBoxContainer/TopBar/PauseButton
+@onready var speed_button: Button = $MarginContainer/VBoxContainer/TopBar/SpeedButton
 @onready var restart_button: Button = $MarginContainer/VBoxContainer/TopBar/RestartButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
@@ -64,11 +65,13 @@ func _ready() -> void:
 	GameManager.game_won.connect(_on_game_won)
 	GameManager.tower_selection_changed.connect(_on_tower_selection_changed)
 	GameManager.level_changed.connect(_on_level_changed)
+	GameManager.game_speed_changed.connect(_on_game_speed_changed)
 
 	start_button.pressed.connect(_on_start_pressed)
 	level_select_button.pressed.connect(_on_level_select_pressed)
 	start_wave_button.pressed.connect(_on_start_pressed)
 	pause_button.pressed.connect(_on_pause_pressed)
+	speed_button.pressed.connect(_on_speed_pressed)
 	restart_button.pressed.connect(_on_restart_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
@@ -113,8 +116,9 @@ func _update_all() -> void:
 	_update_enemy_legend()
 	_update_level_text()
 	_update_selected_tower_text()
+	_update_speed_button(GameManager.get_game_speed())
 	set_start_wave_available(true)
-	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可点按钮升级/出售"
+	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可点按钮升级/出售，F 键快进"
 
 func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = "金币: %d" % new_gold
@@ -317,6 +321,15 @@ func _on_sell_pressed() -> void:
 
 func _on_pause_pressed() -> void:
 	get_parent().call("_toggle_pause")
+
+func _on_speed_pressed() -> void:
+	GameManager.cycle_game_speed()
+
+func _on_game_speed_changed(speed: float) -> void:
+	_update_speed_button(speed)
+
+func _update_speed_button(speed: float) -> void:
+	speed_button.text = "速度 x%d" % int(speed)
 
 func _on_level_select_pressed() -> void:
 	_pending_level_index = GameManager.current_level_index

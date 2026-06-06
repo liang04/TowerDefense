@@ -113,6 +113,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_upgrade_selected_tower()
 		elif event.keycode == KEY_X:
 			_sell_selected_tower()
+		elif event.keycode == KEY_F:
+			GameManager.cycle_game_speed()
 		elif event.keycode == KEY_R:
 			_restart_game()
 

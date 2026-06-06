@@ -16,6 +16,7 @@ signal wave_countdown(seconds_left: int)
 signal tower_selection_changed(tower_type: String)
 signal sfx_requested(sfx_name: String)
 signal level_changed(level_index: int, level_name: String)
+signal game_speed_changed(speed: float)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -28,6 +29,9 @@ const LEVEL_DAMAGE_SCALE_PER_LEVEL := 0.45   # 每级伤害加成比例
 const LEVEL_RANGE_BONUS_PER_LEVEL := 14.0    # 每级射程加成（像素）
 const LEVEL_COOLDOWN_SCALE_PER_LEVEL := 0.12 # 每级冷却缩减比例
 const MIN_COOLDOWN := 0.18                    # 冷却时间下限（秒）
+
+## 可选的游戏速度倍率（快进），按顺序循环切换
+const GAME_SPEEDS: Array[float] = [1.0, 2.0, 3.0]
 
 const ENEMY_TYPE_NAMES := {
 	"grunt": "普通怪",
@@ -87,6 +91,7 @@ var selected_tower_type: String = "arrow"
 var current_wave: int = 0
 var enemies_killed: int = 0
 var enemies_leaked: int = 0
+var game_speed_index: int = 0
 
 ## 网格占用表：key = Vector2i(列, 行), value = true 表示已占用
 var occupied_cells: Dictionary = {}
@@ -283,6 +288,20 @@ func win_game() -> void:
 
 func request_sfx(sfx_name: String) -> void:
 	sfx_requested.emit(sfx_name)
+
+## 当前游戏速度倍率
+func get_game_speed() -> float:
+	return GAME_SPEEDS[game_speed_index]
+
+## 循环切换游戏速度（1x → 2x → 3x → 1x），通过 Engine.time_scale 统一加速
+## 移动、冷却、刷怪定时器、波次倒计时与间隔
+func cycle_game_speed() -> void:
+	game_speed_index = (game_speed_index + 1) % GAME_SPEEDS.size()
+	_apply_time_scale()
+	game_speed_changed.emit(get_game_speed())
+
+func _apply_time_scale() -> void:
+	Engine.time_scale = get_game_speed()
 
 func reset_game() -> void:
 	_apply_level_settings()
