@@ -51,6 +51,10 @@ func _setup_sprite() -> void:
 	_anim.show_behind_parent = true
 	add_child(_anim)
 	_anim.play(SpriteLibrary.ANIM_NAME)
+	var frame_count := frames.get_frame_count(SpriteLibrary.ANIM_NAME)
+	if frame_count > 1:
+		_anim.frame = randi() % frame_count
+		_anim.frame_progress = randf()
 	_use_sprite = true
 	queue_redraw()
 
