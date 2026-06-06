@@ -72,7 +72,7 @@ func _spawn_enemy() -> void:
 	var wave_data := _get_current_spawn_data()
 	var enemy := _enemy_scene.instantiate() as Enemy
 
-	enemy.setup(wave_data)
+	enemy.setup(GameManager.get_scaled_enemy_data(wave_data))
 
 	enemies_container.add_child(enemy)
 	_enemies_alive += 1

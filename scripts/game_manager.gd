@@ -19,6 +19,7 @@ signal level_changed(level_index: int, level_name: String)
 signal game_speed_changed(speed: float)
 signal enemy_killed(world_pos: Vector2, reward: int, color: Color)
 signal audio_settings_changed(volume: float, muted: bool)
+signal difficulty_changed(index: int, difficulty_name: String)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -34,6 +35,13 @@ const MIN_COOLDOWN := 0.18                    # 冷却时间下限（秒）
 
 ## 可选的游戏速度倍率（快进），按顺序循环切换
 const GAME_SPEEDS: Array[float] = [1.0, 2.0, 3.0]
+
+## 难度档位：对敌人血量/速度/奖励与初始阳光/生命施加倍率（普通=基准）
+const DIFFICULTIES: Array[Dictionary] = [
+	{"name": "简单", "hp_mult": 0.8, "speed_mult": 0.95, "reward_mult": 1.15, "gold_mult": 1.25, "lives_mult": 1.4},
+	{"name": "普通", "hp_mult": 1.0, "speed_mult": 1.0, "reward_mult": 1.0, "gold_mult": 1.0, "lives_mult": 1.0},
+	{"name": "困难", "hp_mult": 1.4, "speed_mult": 1.1, "reward_mult": 0.9, "gold_mult": 0.85, "lives_mult": 0.65},
+]
 
 ## 进度存档路径（用户数据目录，跨会话持久化）
 const SAVE_PATH := "user://savegame.cfg"
@@ -108,6 +116,7 @@ var current_wave: int = 0
 var enemies_killed: int = 0
 var enemies_leaked: int = 0
 var game_speed_index: int = 0
+var difficulty_index: int = 1   # 默认普通
 var sound_volume: float = 1.0   # 主音量 0~1
 var is_muted: bool = false
 
@@ -185,12 +194,14 @@ func _load_settings() -> void:
 	if config.load(SETTINGS_PATH) != OK:
 		return
 	game_speed_index = clampi(int(config.get_value("settings", "game_speed_index", 0)), 0, GAME_SPEEDS.size() - 1)
+	difficulty_index = clampi(int(config.get_value("settings", "difficulty_index", 1)), 0, DIFFICULTIES.size() - 1)
 	sound_volume = clampf(float(config.get_value("settings", "sound_volume", 1.0)), 0.0, 1.0)
 	is_muted = bool(config.get_value("settings", "muted", false))
 
 func _save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("settings", "game_speed_index", game_speed_index)
+	config.set_value("settings", "difficulty_index", difficulty_index)
 	config.set_value("settings", "sound_volume", sound_volume)
 	config.set_value("settings", "muted", is_muted)
 	config.save(SETTINGS_PATH)
@@ -236,8 +247,40 @@ func _init_path() -> void:
 
 func _apply_level_settings() -> void:
 	var level := get_current_level()
-	gold = int(level.get("starting_gold", 160))
-	lives = int(level.get("starting_lives", 20))
+	var diff := get_difficulty()
+	gold = int(round(float(level.get("starting_gold", 160)) * float(diff["gold_mult"])))
+	lives = maxi(1, int(round(float(level.get("starting_lives", 20)) * float(diff["lives_mult"]))))
+
+## ---- 难度 ----
+
+func get_difficulty() -> Dictionary:
+	return DIFFICULTIES[difficulty_index]
+
+func get_difficulty_name() -> String:
+	return String(get_difficulty()["name"])
+
+func get_difficulty_count() -> int:
+	return DIFFICULTIES.size()
+
+func set_difficulty(index: int) -> void:
+	var clamped := clampi(index, 0, DIFFICULTIES.size() - 1)
+	if clamped == difficulty_index:
+		return
+	difficulty_index = clamped
+	_save_settings()
+	difficulty_changed.emit(difficulty_index, get_difficulty_name())
+
+func cycle_difficulty() -> void:
+	set_difficulty((difficulty_index + 1) % DIFFICULTIES.size())
+
+## 按当前难度缩放敌人数据（血量/速度/奖励），返回新字典（不修改原波次配置）
+func get_scaled_enemy_data(base: Dictionary) -> Dictionary:
+	var diff := get_difficulty()
+	var scaled := base.duplicate(true)
+	scaled["hp"] = int(round(float(base.get("hp", 30)) * float(diff["hp_mult"])))
+	scaled["speed"] = float(base.get("speed", 120.0)) * float(diff["speed_mult"])
+	scaled["reward"] = int(round(float(base.get("reward", 10)) * float(diff["reward_mult"])))
+	return scaled
 
 ## ---- 公共方法 ----
 

@@ -35,6 +35,7 @@ const MESSAGE_TIME := 3.0
 @onready var prev_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/PrevLevelButton
 @onready var next_select_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/NextSelectLevelButton
 @onready var confirm_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/ConfirmLevelButton
+@onready var difficulty_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/DifficultyButton
 @onready var cancel_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/CancelLevelButton
 @onready var level_select_title: Label = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectTitle
 @onready var level_select_description: Label = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectDescription
@@ -89,6 +90,8 @@ func _ready() -> void:
 	prev_level_button.pressed.connect(_on_prev_level_pressed)
 	next_select_level_button.pressed.connect(_on_next_select_level_pressed)
 	confirm_level_button.pressed.connect(_on_confirm_level_pressed)
+	difficulty_button.pressed.connect(_on_difficulty_pressed)
+	GameManager.difficulty_changed.connect(_on_difficulty_changed)
 	cancel_level_button.pressed.connect(_on_cancel_level_pressed)
 	next_level_button.pressed.connect(_on_next_level_pressed)
 	restart_result_button.pressed.connect(_on_restart_pressed)
@@ -202,10 +205,11 @@ func _on_level_changed(_level_index: int, _level_name: String) -> void:
 	_update_action_buttons()
 
 func _update_level_text() -> void:
-	level_label.text = "关卡: %d/%d %s" % [
+	level_label.text = "关卡: %d/%d %s · %s" % [
 		GameManager.current_level_index + 1,
 		GameManager.get_level_count(),
 		GameManager.get_current_level_name(),
+		GameManager.get_difficulty_name(),
 	]
 
 func _update_wave_text(wave_num: int) -> void:
@@ -433,6 +437,14 @@ func _on_confirm_level_pressed() -> void:
 func _on_cancel_level_pressed() -> void:
 	hide_overlay()
 
+func _on_difficulty_pressed() -> void:
+	GameManager.cycle_difficulty()
+
+func _on_difficulty_changed(_index: int, _difficulty_name: String) -> void:
+	# 难度变化时刷新选关面板与顶部关卡标签
+	_update_level_select_text()
+	_update_level_text()
+
 func _update_level_select_text() -> void:
 	var levels: Array = GameManager.levels
 	if levels.is_empty():
@@ -449,13 +461,18 @@ func _update_level_select_text() -> void:
 		"" if unlocked else "（未解锁）",
 	]
 	var lock_hint := "" if unlocked else "\n通关上一关后解锁"
+	# 描述里显示按当前难度换算后的初始阳光/生命
+	var diff := GameManager.get_difficulty()
+	var shown_gold := int(round(float(level.get("starting_gold", 0)) * float(diff["gold_mult"])))
+	var shown_lives := maxi(1, int(round(float(level.get("starting_lives", 0)) * float(diff["lives_mult"]))))
 	level_select_description.text = "%s\n初始阳光: %d | 初始生命: %d | 波次: %d%s" % [
 		String(level.get("description", "")),
-		int(level.get("starting_gold", 0)),
-		int(level.get("starting_lives", 0)),
+		shown_gold,
+		shown_lives,
 		(level.get("waves", []) as Array).size(),
 		lock_hint,
 	]
+	difficulty_button.text = "难度: %s" % GameManager.get_difficulty_name()
 	prev_level_button.disabled = _pending_level_index <= 0
 	next_select_level_button.disabled = _pending_level_index >= GameManager.get_level_count() - 1
 	confirm_level_button.disabled = not unlocked

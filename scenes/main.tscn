@@ -258,9 +258,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -250.0
-offset_top = -125.0
+offset_top = -150.0
 offset_right = 250.0
-offset_bottom = 125.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -290,6 +290,10 @@ text = "上一关"
 [node name="NextSelectLevelButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls"]
 layout_mode = 2
 text = "下一关"
+
+[node name="DifficultyButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
+layout_mode = 2
+text = "难度: 普通"
 
 [node name="ConfirmLevelButton" type="Button" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
 layout_mode = 2
