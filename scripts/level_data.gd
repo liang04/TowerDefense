@@ -10,6 +10,7 @@ static func get_levels() -> Array[Dictionary]:
 			"background": Color(0.11, 0.2, 0.13),
 			"buildable_color": Color(0.18, 0.55, 0.24, 0.22),
 			"path_color": Color(0.35, 0.28, 0.2),
+			"ambient_color": Color(1.0, 1.0, 0.97),
 			"path": [
 				Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1),
 				Vector2i(3, 2), Vector2i(3, 3),
@@ -52,6 +53,7 @@ static func get_levels() -> Array[Dictionary]:
 			"background": Color(0.13, 0.17, 0.18),
 			"buildable_color": Color(0.18, 0.48, 0.4, 0.24),
 			"path_color": Color(0.38, 0.31, 0.24),
+			"ambient_color": Color(0.88, 0.92, 1.0),
 			"path": [
 				Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0),
 				Vector2i(4, 1), Vector2i(4, 2), Vector2i(3, 2), Vector2i(2, 2), Vector2i(1, 2),
@@ -86,6 +88,7 @@ static func get_levels() -> Array[Dictionary]:
 			"background": Color(0.18, 0.14, 0.12),
 			"buildable_color": Color(0.42, 0.24, 0.18, 0.26),
 			"path_color": Color(0.46, 0.25, 0.16),
+			"ambient_color": Color(1.0, 0.85, 0.76),
 			"path": [
 				Vector2i(0, 4), Vector2i(1, 4), Vector2i(2, 4), Vector2i(3, 4),
 				Vector2i(3, 3), Vector2i(3, 2), Vector2i(4, 2), Vector2i(5, 2), Vector2i(6, 2),

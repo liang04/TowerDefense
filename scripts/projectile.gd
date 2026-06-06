@@ -11,6 +11,7 @@ var projectile_color: Color = Color(1.0, 0.85, 0.25)
 var _target: Enemy = null
 var _last_target_position: Vector2 = Vector2.ZERO
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
+var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
 var _effects_container: Node = null
 
 func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value: float, slow_time: float, color_value: Color, splash_value: float = 0.0) -> void:
@@ -79,6 +80,13 @@ func _spawn_hit_effect() -> void:
 	var effect := _hit_effect_scene.instantiate() as HitEffect
 	effects_container.add_child(effect)
 	effect.setup(global_position, projectile_color, effect_radius)
+
+	# 命中爆炸粒子：溅射弹更大更密
+	var is_splash := splash_radius > 0.0
+	var burst := _particle_burst_scene.instantiate() as ParticleBurst
+	burst.global_position = global_position
+	effects_container.add_child(burst)
+	burst.setup(projectile_color, 18 if is_splash else 8, 180.0 if is_splash else 130.0, 7.0 if is_splash else 4.5, 0.45)
 
 func _get_effects_container() -> Node:
 	if _effects_container and is_instance_valid(_effects_container):

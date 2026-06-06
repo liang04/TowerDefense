@@ -6,6 +6,8 @@ extends Node2D
 ## ---- 预加载 ----
 var _tower_scene: PackedScene = preload("res://scenes/tower.tscn")
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
+var _floating_text_scene: PackedScene = preload("res://scenes/floating_text.tscn")
+var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
 
 ## ---- 节点引用 ----
 @onready var towers_container: Node2D = $Towers
@@ -28,12 +30,38 @@ var _recommended_cells: Array[Vector2i] = []
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_set_gameplay_nodes_pausable()
+	_setup_ambiance()
 	# 连接信号
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.life_lost.connect(_on_life_lost)
+	GameManager.enemy_killed.connect(_on_enemy_killed)
 	wave_spawner.connect("all_waves_completed", _on_all_waves_completed)
 	_init_tutorial()
 	queue_redraw()
+
+## 按关卡设置整体光照氛围（CanvasModulate 只作用于 2D 世界，不影响 HUD）
+func _setup_ambiance() -> void:
+	var ambiance := CanvasModulate.new()
+	ambiance.color = GameManager.get_level_ambient_color()
+	add_child(ambiance)
+
+## ---- 世界特效 ----
+
+func _on_enemy_killed(world_pos: Vector2, reward: int, color: Color) -> void:
+	_spawn_floating_text(world_pos + Vector2(0, -20), "+%d" % reward, Color(1.0, 0.88, 0.3))
+	_spawn_particle_burst(world_pos, color, 14, 150.0, 6.0, 0.5)
+
+func _spawn_floating_text(world_pos: Vector2, text: String, color: Color) -> void:
+	var node := _floating_text_scene.instantiate() as FloatingText
+	node.global_position = world_pos
+	effects_container.add_child(node)
+	node.setup(text, color)
+
+func _spawn_particle_burst(world_pos: Vector2, color: Color, amount: int, speed: float, particle_size: float, life: float) -> void:
+	var burst := _particle_burst_scene.instantiate() as ParticleBurst
+	burst.global_position = world_pos
+	effects_container.add_child(burst)
+	burst.setup(color, amount, speed, particle_size, life)
 
 func _set_gameplay_nodes_pausable() -> void:
 	for node in [towers_container, enemies_container, projectiles_container, effects_container, wave_spawner]:

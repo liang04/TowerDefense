@@ -17,6 +17,7 @@ signal tower_selection_changed(tower_type: String)
 signal sfx_requested(sfx_name: String)
 signal level_changed(level_index: int, level_name: String)
 signal game_speed_changed(speed: float)
+signal enemy_killed(world_pos: Vector2, reward: int, color: Color)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -283,9 +284,10 @@ func add_gold(amount: int) -> void:
 	gold += amount
 	gold_changed.emit(gold)
 
-func notify_enemy_killed() -> void:
+func notify_enemy_killed(world_pos: Vector2, reward: int, color: Color) -> void:
 	enemies_killed += 1
 	request_sfx("kill")
+	enemy_killed.emit(world_pos, reward, color)
 
 ## 怪物到达终点
 func lose_life(amount: int = 1) -> void:
@@ -448,3 +450,8 @@ func get_level_buildable_color() -> Color:
 func get_level_path_color() -> Color:
 	var value = get_current_level().get("path_color", Color(0.35, 0.28, 0.2))
 	return value if value is Color else Color(0.35, 0.28, 0.2)
+
+## 关卡整体光照色调（默认中性白，即不改变观感）
+func get_level_ambient_color() -> Color:
+	var value = get_current_level().get("ambient_color", Color(1, 1, 1))
+	return value if value is Color else Color(1, 1, 1)

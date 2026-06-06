@@ -4,6 +4,7 @@ class_name Tower
 extends Node2D
 
 var _projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
+var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
 
 const TOWER_ART_PATHS := {
 	"arrow": "res://assets/towers/arrow_tower.svg",
@@ -143,8 +144,17 @@ func _attack(target: Enemy) -> void:
 	var projectile := _projectile_scene.instantiate() as Projectile
 	projectiles_container.add_child(projectile)
 	projectile.setup(global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius)
+	_spawn_muzzle_flash(projectiles_container, target)
 	GameManager.request_sfx("shoot")
 	_shot_flash_timer = 0.12
+
+## 朝目标方向喷出一小簇枪口火光粒子
+func _spawn_muzzle_flash(container: Node, target: Enemy) -> void:
+	var direction := (target.global_position - global_position).normalized()
+	var burst := _particle_burst_scene.instantiate() as ParticleBurst
+	burst.global_position = global_position + direction * 18.0
+	container.add_child(burst)
+	burst.setup(body_color.lightened(0.35), 6, 120.0, 3.0, 0.22, direction, 24.0)
 
 func _get_projectiles_container() -> Node:
 	if _projectiles_container and is_instance_valid(_projectiles_container):

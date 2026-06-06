@@ -24,6 +24,7 @@ var _current_wp_index: int = 0
 var _slow_timer: float = 0.0
 var _slow_multiplier: float = 1.0
 var _hit_flash_timer: float = 0.0
+var _hit_punch_tween: Tween = null
 
 ## ---- 生命周期 ----
 func _ready() -> void:
@@ -69,9 +70,19 @@ func _process(delta: float) -> void:
 func take_damage(damage: int) -> void:
 	hp -= damage
 	_hit_flash_timer = 0.1
+	_play_hit_punch()
 	queue_redraw()
 	if hp <= 0:
 		_on_killed()
+
+## 受击时的缩放打击感：快速放大再回弹
+func _play_hit_punch() -> void:
+	if _hit_punch_tween and _hit_punch_tween.is_valid():
+		_hit_punch_tween.kill()
+	scale = Vector2.ONE
+	_hit_punch_tween = create_tween()
+	_hit_punch_tween.tween_property(self, "scale", Vector2(1.25, 1.25), 0.06)
+	_hit_punch_tween.tween_property(self, "scale", Vector2.ONE, 0.1)
 
 func apply_slow(multiplier: float, duration: float) -> void:
 	if duration <= 0.0:
@@ -132,7 +143,7 @@ func _get_enemy_art_texture() -> Texture2D:
 
 ## 被击杀
 func _on_killed() -> void:
-	GameManager.notify_enemy_killed()
+	GameManager.notify_enemy_killed(global_position, reward, body_color)
 	GameManager.add_gold(reward)
 	queue_free()
 
