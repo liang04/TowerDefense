@@ -583,6 +583,16 @@ func _draw_hover() -> void:
 		)
 		draw_rect(rect, color)
 
+		# 种植前射程预览：悬停可种植格子时，画出所选植物的攻击范围圈
+		if can_place:
+			var center := Vector2(
+				_hover_cell.x * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5,
+				_hover_cell.y * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5
+			)
+			var preview_range := float(GameManager.get_tower_config(GameManager.selected_tower_type)["range"])
+			draw_circle(center, preview_range, Color(0.4, 0.8, 1.0, 0.07))
+			draw_arc(center, preview_range, 0, TAU, 48, Color(0.45, 0.8, 1.0, 0.55), 1.5)
+
 	if _selected_cell.x >= 0:
 		var selected_rect := Rect2(
 			_selected_cell.x * GameManager.CELL_SIZE + 3,
@@ -603,6 +613,7 @@ func _on_life_lost(_new_lives: int) -> void:
 	var effect := _hit_effect_scene.instantiate() as HitEffect
 	effects_container.add_child(effect)
 	effect.setup(GameManager.path_points[GameManager.path_points.size() - 1], Color(1.0, 0.15, 0.12), 42.0)
+	hud.flash_damage()
 	hud.show_message("僵尸突破防线，生命 -1")
 
 func _on_all_waves_completed() -> void:

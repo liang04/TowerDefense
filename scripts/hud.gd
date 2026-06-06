@@ -54,6 +54,10 @@ var _selected_tower_for_actions: Tower = null
 ## 主场景（HUD 的父节点），用于回调游戏流程方法
 @onready var _main: GameMain = get_parent() as GameMain
 
+## 漏怪时的全屏红闪（覆盖游戏世界、位于 HUD 文本与遮罩之下）
+var _damage_flash: ColorRect = null
+var _damage_flash_tween: Tween = null
+
 ## ---- 生命周期 ----
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -100,10 +104,31 @@ func _ready() -> void:
 		"frost": frost_tower_button,
 	}
 
+	_setup_damage_flash()
+
 	# 初始化显示
 	_update_all()
 	_on_audio_settings_changed(GameManager.sound_volume, GameManager.is_muted)
 	hide_overlay()
+
+## 创建全屏红闪层，并下移到 HUD 最底层（盖住游戏世界，但在文本/遮罩之下）
+func _setup_damage_flash() -> void:
+	_damage_flash = ColorRect.new()
+	_damage_flash.color = Color(0.9, 0.1, 0.1, 0.0)
+	_damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_damage_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_damage_flash)
+	move_child(_damage_flash, 0)
+
+## 漏怪反馈：屏幕红闪一下并淡出
+func flash_damage() -> void:
+	if _damage_flash == null:
+		return
+	if _damage_flash_tween and _damage_flash_tween.is_valid():
+		_damage_flash_tween.kill()
+	_damage_flash.color = Color(0.9, 0.1, 0.1, 0.32)
+	_damage_flash_tween = create_tween()
+	_damage_flash_tween.tween_property(_damage_flash, "color:a", 0.0, 0.45)
 
 func _make_gameplay_hud_click_through(node: Node) -> void:
 	if node is Control:
