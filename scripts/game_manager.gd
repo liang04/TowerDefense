@@ -33,6 +33,9 @@ const MIN_COOLDOWN := 0.18                    # 冷却时间下限（秒）
 ## 可选的游戏速度倍率（快进），按顺序循环切换
 const GAME_SPEEDS: Array[float] = [1.0, 2.0, 3.0]
 
+## 进度存档路径（用户数据目录，跨会话持久化）
+const SAVE_PATH := "user://savegame.cfg"
+
 const ENEMY_TYPE_NAMES := {
 	"grunt": "普通怪",
 	"runner": "快速怪",
@@ -87,6 +90,7 @@ var tower_configs: Dictionary = {
 ## ---- 状态 ----
 var levels: Array[Dictionary] = []
 var current_level_index: int = 0
+var max_unlocked_level: int = 0
 var gold: int = 160
 var lives: int = 20
 var is_game_over: bool = false
@@ -112,8 +116,32 @@ func _ready() -> void:
 	if levels.is_empty():
 		push_error("No level data configured.")
 		return
+	_load_progress()
 	_apply_level_settings()
 	_init_path()
+
+## ---- 进度存档 ----
+
+## 关卡是否已解锁（第 0 关始终解锁，其余需通关前一关）
+func is_level_unlocked(level_index: int) -> bool:
+	return level_index >= 0 and level_index <= max_unlocked_level
+
+## 读取存档，恢复已解锁关卡与上次游玩关卡；无存档或损坏时回退默认进度
+func _load_progress() -> void:
+	var config := ConfigFile.new()
+	if config.load(SAVE_PATH) != OK:
+		return
+	var last_index := int(levels.size() - 1)
+	var saved_max := int(config.get_value("progress", "max_unlocked_level", 0))
+	var saved_last := int(config.get_value("progress", "last_level_index", 0))
+	max_unlocked_level = clampi(saved_max, 0, last_index)
+	current_level_index = clampi(saved_last, 0, max_unlocked_level)
+
+func _save_progress() -> void:
+	var config := ConfigFile.new()
+	config.set_value("progress", "max_unlocked_level", max_unlocked_level)
+	config.set_value("progress", "last_level_index", current_level_index)
+	config.save(SAVE_PATH)
 
 ## 初始化路径（坐标为网格 列,行）
 func _init_path() -> void:
@@ -291,8 +319,16 @@ func win_game() -> void:
 	if is_game_over:
 		return
 	is_game_over = true
+	_unlock_next_level()
 	request_sfx("win")
 	game_won.emit()
+
+## 通关后解锁下一关并写入存档（已是最后一关时仅保存进度）
+func _unlock_next_level() -> void:
+	var next_index := mini(current_level_index + 1, levels.size() - 1)
+	if next_index > max_unlocked_level:
+		max_unlocked_level = next_index
+	_save_progress()
 
 func request_sfx(sfx_name: String) -> void:
 	sfx_requested.emit(sfx_name)
@@ -330,13 +366,17 @@ func advance_to_next_level() -> bool:
 	if current_level_index + 1 >= levels.size():
 		return false
 	current_level_index += 1
+	_save_progress()
 	reset_game()
 	return true
 
 func set_level(level_index: int) -> bool:
 	if level_index < 0 or level_index >= levels.size():
 		return false
+	if not is_level_unlocked(level_index):
+		return false
 	current_level_index = level_index
+	_save_progress()
 	reset_game()
 	return true
 

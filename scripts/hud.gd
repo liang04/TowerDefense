@@ -389,16 +389,22 @@ func _update_level_select_text() -> void:
 		return
 
 	var level: Dictionary = levels[_pending_level_index]
-	level_select_title.text = "关卡 %d/%d: %s" % [
+	var unlocked := GameManager.is_level_unlocked(_pending_level_index)
+	level_select_title.text = "关卡 %d/%d: %s%s" % [
 		_pending_level_index + 1,
 		GameManager.get_level_count(),
 		String(level.get("name", "未命名关卡")),
+		"" if unlocked else "（未解锁）",
 	]
-	level_select_description.text = "%s\n初始金币: %d | 初始生命: %d | 波次: %d" % [
+	var lock_hint := "" if unlocked else "\n通关上一关后解锁"
+	level_select_description.text = "%s\n初始金币: %d | 初始生命: %d | 波次: %d%s" % [
 		String(level.get("description", "")),
 		int(level.get("starting_gold", 0)),
 		int(level.get("starting_lives", 0)),
 		(level.get("waves", []) as Array).size(),
+		lock_hint,
 	]
 	prev_level_button.disabled = _pending_level_index <= 0
 	next_select_level_button.disabled = _pending_level_index >= GameManager.get_level_count() - 1
+	confirm_level_button.disabled = not unlocked
+	confirm_level_button.text = "使用此关卡" if unlocked else "未解锁"
