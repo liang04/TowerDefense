@@ -16,6 +16,8 @@ var hp: int = 30
 var enemy_type: String = "grunt"
 var speed: float = 120.0     # 像素/秒
 var reward: int = 10         # 击退后的阳光奖励
+var armor: int = 0           # 每次受击的固定减伤（灼烧无视护甲）
+var slow_immune: bool = false  # 免疫减速
 var body_color: Color = Color(0.2, 0.8, 0.2)
 
 ## ---- 内部状态 ----
@@ -115,9 +117,9 @@ func _update_sprite_visual(direction: Vector2) -> void:
 
 ## ---- 公共方法 ----
 
-## 受到伤害
+## 受到伤害（护甲固定减伤，至少造成 1 点；灼烧走 _tick_burn 无视护甲）
 func take_damage(damage: int) -> void:
-	hp -= damage
+	hp -= maxi(1, damage - armor)
 	_hit_flash_timer = 0.1
 	_play_hit_punch()
 	queue_redraw()
@@ -134,7 +136,7 @@ func _play_hit_punch() -> void:
 	_hit_punch_tween.tween_property(self, "scale", Vector2.ONE, 0.1)
 
 func apply_slow(multiplier: float, duration: float) -> void:
-	if duration <= 0.0:
+	if duration <= 0.0 or slow_immune:
 		return
 	_slow_multiplier = minf(_slow_multiplier, clampf(multiplier, 0.2, 1.0))
 	_slow_timer = maxf(_slow_timer, duration)
@@ -170,6 +172,8 @@ func setup(data: Dictionary) -> void:
 	hp = max_hp
 	speed = float(data.get("speed", speed))
 	reward = int(data.get("reward", reward))
+	armor = int(data.get("armor", 0))
+	slow_immune = bool(data.get("slow_immune", false))
 	var color_value = data.get("color", body_color)
 	if color_value is Color:
 		body_color = color_value
@@ -263,6 +267,12 @@ func _draw_body() -> void:
 	if enemy_type == "boss":
 		_draw_boss(color)
 		return
+	if enemy_type == "armored":
+		_draw_armored(color)
+		return
+	if enemy_type == "frostproof":
+		_draw_frostproof(color)
+		return
 
 	var art_texture := _get_enemy_art_texture()
 	if art_texture:
@@ -275,6 +285,23 @@ func _draw_body() -> void:
 		draw_polygon(runner_shape, PackedColorArray([color]))
 	else:
 		draw_rect(Rect2(-15, -15, 30, 30), color)
+
+## 橙甲僵尸：本体 + 金属护甲框与横带（视觉提示"有护甲"）
+func _draw_armored(color: Color) -> void:
+	draw_rect(Rect2(-15, -15, 30, 30), color)
+	draw_rect(Rect2(-15, -4, 30, 8), Color(0.72, 0.74, 0.78))
+	draw_rect(Rect2(-15, -15, 30, 30), Color(0.55, 0.57, 0.6), false, 4.0)
+	draw_circle(Vector2(-10, -10), 1.8, Color(0.88, 0.88, 0.9))
+	draw_circle(Vector2(10, -10), 1.8, Color(0.88, 0.88, 0.9))
+
+## 寒霜僵尸：冰蓝本体 + 冰刺与冰核（视觉提示"免疫减速"）
+func _draw_frostproof(color: Color) -> void:
+	draw_circle(Vector2.ZERO, 16.0, color)
+	var ice := Color(0.9, 0.97, 1.0)
+	for i in range(6):
+		var dir := Vector2(cos(TAU * float(i) / 6.0), sin(TAU * float(i) / 6.0))
+		draw_line(dir * 13.0, dir * 20.0, ice, 2.0)
+	draw_circle(Vector2.ZERO, 5.0, ice)
 
 ## 僵尸王本体：大号深色躯干 + 王冠尖刺 + 发光双眼
 func _draw_boss(color: Color) -> void:

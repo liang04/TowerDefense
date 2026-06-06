@@ -59,6 +59,8 @@ const ENEMY_TYPE_NAMES := {
 	"runner": "疾跑僵尸",
 	"tank": "铁桶僵尸",
 	"boss": "僵尸王",
+	"armored": "橙甲僵尸",
+	"frostproof": "寒霜僵尸",
 }
 
 const ENEMY_TYPE_ADVICE := {
@@ -66,6 +68,8 @@ const ENEMY_TYPE_ADVICE := {
 	"runner": "寒冰花",
 	"tank": "爆裂果",
 	"boss": "爆裂果",
+	"armored": "火爆辣椒",
+	"frostproof": "豌豆射手",
 }
 
 var tower_configs: Dictionary = {

@@ -79,10 +79,12 @@ static func get_levels() -> Array[Dictionary]:
 				{"groups": [
 					{"count": 6, "interval": 0.9, "type": "tank", "hp": 155, "speed": 90.0, "reward": 24, "color": Color(0.62, 0.55, 0.48)},
 					{"count": 8, "interval": 0.45, "type": "runner", "hp": 42, "speed": 205.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 4, "interval": 0.8, "type": "armored", "hp": 90, "speed": 95.0, "reward": 18, "armor": 6, "color": Color(0.85, 0.5, 0.2)},
 				]},
 				{"groups": [
 					{"count": 14, "interval": 0.38, "type": "grunt", "hp": 76, "speed": 145.0, "reward": 13, "color": Color(0.25, 0.8, 0.25)},
 					{"count": 7, "interval": 0.7, "type": "tank", "hp": 210, "speed": 92.0, "reward": 30, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 6, "interval": 0.5, "type": "frostproof", "hp": 55, "speed": 175.0, "reward": 16, "slow_immune": true, "color": Color(0.55, 0.8, 0.95)},
 				]},
 				{"groups": [
 					{"count": 8, "interval": 0.4, "type": "runner", "hp": 50, "speed": 200.0, "reward": 14, "color": Color(0.95, 0.9, 0.25)},
@@ -121,12 +123,14 @@ static func get_levels() -> Array[Dictionary]:
 				]},
 				{"groups": [
 					{"count": 10, "interval": 0.38, "type": "runner", "hp": 50, "speed": 220.0, "reward": 16, "color": Color(0.95, 0.9, 0.25)},
+					{"count": 5, "interval": 0.7, "type": "armored", "hp": 110, "speed": 98.0, "reward": 20, "armor": 7, "color": Color(0.85, 0.5, 0.2)},
 					{"count": 7, "interval": 0.65, "type": "tank", "hp": 230, "speed": 98.0, "reward": 32, "color": Color(0.62, 0.55, 0.48)},
 					{"count": 10, "interval": 0.35, "type": "grunt", "hp": 88, "speed": 152.0, "reward": 14, "color": Color(0.25, 0.8, 0.25)},
 				]},
 				{"groups": [
 					{"count": 8, "interval": 0.32, "type": "runner", "hp": 62, "speed": 228.0, "reward": 18, "color": Color(0.95, 0.9, 0.25)},
 					{"count": 9, "interval": 0.55, "type": "tank", "hp": 270, "speed": 102.0, "reward": 36, "color": Color(0.62, 0.55, 0.48)},
+					{"count": 8, "interval": 0.45, "type": "frostproof", "hp": 70, "speed": 185.0, "reward": 18, "slow_immune": true, "color": Color(0.55, 0.8, 0.95)},
 				]},
 				{"groups": [
 					{"count": 6, "interval": 0.5, "type": "tank", "hp": 200, "speed": 95.0, "reward": 25, "color": Color(0.62, 0.55, 0.48)},
