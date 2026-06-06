@@ -21,6 +21,7 @@ signal level_changed(level_index: int, level_name: String)
 const CELL_SIZE := 80       # 网格单元像素大小
 const GRID_COLS := 12       # 地图列数（宽）
 const GRID_ROWS := 8        # 地图行数（高）
+const MAP_OFFSET_Y := 48    # 地图整体下移的像素，给顶部信息栏留出空间
 
 const ENEMY_TYPE_NAMES := {
 	"grunt": "普通怪",
@@ -115,7 +116,7 @@ func _init_path() -> void:
 	for cell in path_grid:
 		path_points.append(Vector2(
 			cell.x * CELL_SIZE + CELL_SIZE * 0.5,
-			cell.y * CELL_SIZE + CELL_SIZE * 0.5
+			cell.y * CELL_SIZE + CELL_SIZE * 0.5 + MAP_OFFSET_Y
 		))
 
 func _apply_level_settings() -> void:
@@ -215,11 +216,12 @@ func set_selected_tower_type(tower_type: String) -> void:
 ## 网格坐标转像素坐标（格子中心）
 func grid_to_pixel(grid_col: int, grid_row: int) -> Vector2:
 	return Vector2(grid_col * CELL_SIZE + CELL_SIZE * 0.5,
-				   grid_row * CELL_SIZE + CELL_SIZE * 0.5)
+				   grid_row * CELL_SIZE + CELL_SIZE * 0.5 + MAP_OFFSET_Y)
 
 ## 像素坐标转网格坐标
 func pixel_to_grid(pixel_pos: Vector2) -> Vector2i:
-	return Vector2i(int(pixel_pos.x / CELL_SIZE), int(pixel_pos.y / CELL_SIZE))
+	return Vector2i(int(floor(pixel_pos.x / CELL_SIZE)),
+				   int(floor((pixel_pos.y - MAP_OFFSET_Y) / CELL_SIZE)))
 
 ## 击杀奖励
 func add_gold(amount: int) -> void:

@@ -253,6 +253,8 @@ func _toggle_pause() -> void:
 ## ---- 地图绘制 ----
 
 func _draw() -> void:
+	# 地图整体下移，避免与顶部信息栏重叠（塔/敌人/路径点已在 GameManager 中带上同样偏移）
+	draw_set_transform(Vector2(0, GameManager.MAP_OFFSET_Y))
 	_draw_background()
 	_draw_buildable_cells()
 	_draw_tutorial_recommendations()
@@ -335,7 +337,11 @@ func _draw_tutorial_recommendations() -> void:
 		if not GameManager.can_place_tower(cell.x, cell.y):
 			continue
 
-		var center := GameManager.grid_to_pixel(cell.x, cell.y)
+		# 这里在 _draw 的偏移变换内绘制，使用网格原始坐标即可（不能再叠加 grid_to_pixel 的偏移）
+		var center := Vector2(
+			cell.x * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5,
+			cell.y * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5
+		)
 		var rect := Rect2(
 			cell.x * GameManager.CELL_SIZE + 6,
 			cell.y * GameManager.CELL_SIZE + 6,
@@ -373,13 +379,16 @@ func _draw_path() -> void:
 		_draw_path_cell_details(cell, path_color)
 
 	# 绘制路径点连线（辅助线）
+	# path_points 已带 MAP_OFFSET_Y，而 _draw 整体又施加了同样的偏移变换，
+	# 这里减去一次，避免连线和起终点标记被二次下移。
+	var offset := Vector2(0, GameManager.MAP_OFFSET_Y)
 	if GameManager.path_points.size() > 1:
 		for i in range(GameManager.path_points.size() - 1):
-			draw_line(GameManager.path_points[i], GameManager.path_points[i + 1],
+			draw_line(GameManager.path_points[i] - offset, GameManager.path_points[i + 1] - offset,
 					  path_color.lightened(0.22), 4.0)
 
-		var start_point := GameManager.path_points[0]
-		var end_point := GameManager.path_points[GameManager.path_points.size() - 1]
+		var start_point := GameManager.path_points[0] - offset
+		var end_point := GameManager.path_points[GameManager.path_points.size() - 1] - offset
 		_draw_start_marker(start_point)
 		_draw_goal_marker(end_point)
 
@@ -424,21 +433,21 @@ func _draw_goal_marker(end_point: Vector2) -> void:
 	draw_arc(end_point, 28.0, 0.0, TAU, 32, Color(1.0, 0.38, 0.25, 0.75), 3.0)
 
 func _draw_hover() -> void:
-	# 鼠标悬停高亮
-	if _hover_cell.x < 0 or _hover_cell.y < 0:
-		return
+	# 鼠标悬停高亮：仅在地图格子范围内显示，避免鼠标移到顶部/底部 UI 区域时出现红色提示框
+	var in_bounds := _hover_cell.x >= 0 and _hover_cell.y >= 0 \
+		and _hover_cell.x < GameManager.GRID_COLS and _hover_cell.y < GameManager.GRID_ROWS
+	if in_bounds:
+		var can_place := GameManager.can_place_tower(_hover_cell.x, _hover_cell.y)
+		var can_afford := GameManager.gold >= GameManager.get_tower_cost(GameManager.selected_tower_type)
+		var color := Color(0.2, 0.9, 0.2, 0.3) if can_place and can_afford else Color(0.9, 0.2, 0.2, 0.3)
 
-	var can_place := GameManager.can_place_tower(_hover_cell.x, _hover_cell.y)
-	var can_afford := GameManager.gold >= GameManager.get_tower_cost(GameManager.selected_tower_type)
-	var color := Color(0.2, 0.9, 0.2, 0.3) if can_place and can_afford else Color(0.9, 0.2, 0.2, 0.3)
-
-	var rect := Rect2(
-		_hover_cell.x * GameManager.CELL_SIZE,
-		_hover_cell.y * GameManager.CELL_SIZE,
-		GameManager.CELL_SIZE,
-		GameManager.CELL_SIZE
-	)
-	draw_rect(rect, color)
+		var rect := Rect2(
+			_hover_cell.x * GameManager.CELL_SIZE,
+			_hover_cell.y * GameManager.CELL_SIZE,
+			GameManager.CELL_SIZE,
+			GameManager.CELL_SIZE
+		)
+		draw_rect(rect, color)
 
 	if _selected_cell.x >= 0:
 		var selected_rect := Rect2(
