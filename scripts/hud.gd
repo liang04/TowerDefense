@@ -30,6 +30,8 @@ const MESSAGE_TIME := 3.0
 @onready var restart_button: Button = $MarginContainer/VBoxContainer/TopBar/RestartButton
 @onready var resume_button: Button = $Overlay/PausePanel/PauseBox/ResumeButton
 @onready var restart_pause_button: Button = $Overlay/PausePanel/PauseBox/RestartPauseButton
+@onready var volume_slider: HSlider = $Overlay/PausePanel/PauseBox/VolumeRow/VolumeSlider
+@onready var mute_button: Button = $Overlay/PausePanel/PauseBox/MuteButton
 @onready var prev_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/PrevLevelButton
 @onready var next_select_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectControls/NextSelectLevelButton
 @onready var confirm_level_button: Button = $Overlay/LevelSelectPanel/LevelSelectBox/ConfirmLevelButton
@@ -68,15 +70,18 @@ func _ready() -> void:
 	GameManager.tower_selection_changed.connect(_on_tower_selection_changed)
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.game_speed_changed.connect(_on_game_speed_changed)
+	GameManager.audio_settings_changed.connect(_on_audio_settings_changed)
 
 	start_button.pressed.connect(_on_start_pressed)
 	level_select_button.pressed.connect(_on_level_select_pressed)
-	start_wave_button.pressed.connect(_on_start_pressed)
+	start_wave_button.pressed.connect(_on_start_wave_pressed)
 	pause_button.pressed.connect(_on_pause_pressed)
 	speed_button.pressed.connect(_on_speed_pressed)
 	restart_button.pressed.connect(_on_restart_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	restart_pause_button.pressed.connect(_on_restart_pressed)
+	volume_slider.value_changed.connect(_on_volume_changed)
+	mute_button.pressed.connect(_on_mute_pressed)
 	prev_level_button.pressed.connect(_on_prev_level_pressed)
 	next_select_level_button.pressed.connect(_on_next_select_level_pressed)
 	confirm_level_button.pressed.connect(_on_confirm_level_pressed)
@@ -97,6 +102,7 @@ func _ready() -> void:
 
 	# 初始化显示
 	_update_all()
+	_on_audio_settings_changed(GameManager.sound_volume, GameManager.is_muted)
 	hide_overlay()
 
 func _make_gameplay_hud_click_through(node: Node) -> void:
@@ -121,7 +127,7 @@ func _update_all() -> void:
 	_update_selected_tower_text()
 	_update_speed_button(GameManager.get_game_speed())
 	set_start_wave_available(true)
-	message_label.text = "点击按钮或 1/2/3 选植物，左键种植或选中植物，可升级/铲除，T 切目标，F 快进，M 静音"
+	message_label.text = "1/2/3 选植物，左键种植/选中，空格催下一波，T 切目标，F 快进，M 静音，F11 全屏"
 
 func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = "阳光: %d" % new_gold
@@ -134,13 +140,15 @@ func _on_lives_changed(new_lives: int) -> void:
 func _on_wave_started(wave_num: int) -> void:
 	_update_wave_text(wave_num)
 	_update_wave_preview(wave_num, "本波")
+	set_can_call_next_wave(false)
 	show_message("第 %d/%d 波来袭！" % [wave_num, GameManager.get_wave_count()])
 
 func _on_wave_completed(wave_num: int) -> void:
 	var next_wave := wave_num + 1
 	if next_wave <= GameManager.get_wave_count():
 		_update_wave_preview(next_wave, "下一波")
-		show_message("第 %d 波已清理，准备：%s" % [wave_num, GameManager.get_wave_preview_text(next_wave, "下一波")])
+		set_can_call_next_wave(true)
+		show_message("第 %d 波已清理，准备：%s（可点击催下一波）" % [wave_num, GameManager.get_wave_preview_text(next_wave, "下一波")])
 	else:
 		wave_preview_label.text = "所有波次已清理"
 		show_message("第 %d 波已清理" % wave_num)
@@ -252,6 +260,11 @@ func set_start_wave_available(available: bool) -> void:
 	start_wave_button.text = "开始" if available else "进行中"
 	pause_button.disabled = available
 
+## 波间窗口：把"开始"按钮复用为"催下一波"
+func set_can_call_next_wave(can: bool) -> void:
+	start_wave_button.disabled = not can
+	start_wave_button.text = "催下一波" if can else "进行中"
+
 func set_pause_button_paused(paused: bool) -> void:
 	pause_button.text = "继续" if paused else "暂停"
 
@@ -319,6 +332,9 @@ func _on_start_pressed() -> void:
 	hide_overlay()
 	_main._start_game()
 
+func _on_start_wave_pressed() -> void:
+	_main._on_start_wave_button()
+
 func _on_tower_button_pressed(tower_type: String) -> void:
 	_main._select_tower_type(tower_type)
 
@@ -336,6 +352,16 @@ func _on_pause_pressed() -> void:
 
 func _on_speed_pressed() -> void:
 	GameManager.cycle_game_speed()
+
+func _on_volume_changed(value: float) -> void:
+	GameManager.set_volume(value)
+
+func _on_mute_pressed() -> void:
+	GameManager.toggle_mute()
+
+func _on_audio_settings_changed(volume: float, muted: bool) -> void:
+	volume_slider.set_value_no_signal(volume)
+	mute_button.text = "音效: 关" if muted else "音效: 开"
 
 func _on_game_speed_changed(speed: float) -> void:
 	_update_speed_button(speed)

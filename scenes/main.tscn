@@ -206,9 +206,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -180.0
-offset_top = -90.0
+offset_top = -125.0
 offset_right = 180.0
-offset_bottom = 90.0
+offset_bottom = 125.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -220,6 +220,26 @@ theme_override_constants/separation = 12
 layout_mode = 2
 text = "已暂停"
 horizontal_alignment = 1
+
+[node name="VolumeRow" type="HBoxContainer" parent="HUD/Overlay/PausePanel/PauseBox"]
+layout_mode = 2
+
+[node name="VolumeLabel" type="Label" parent="HUD/Overlay/PausePanel/PauseBox/VolumeRow"]
+layout_mode = 2
+text = "音量"
+
+[node name="VolumeSlider" type="HSlider" parent="HUD/Overlay/PausePanel/PauseBox/VolumeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="MuteButton" type="Button" parent="HUD/Overlay/PausePanel/PauseBox"]
+layout_mode = 2
+text = "音效: 开"
 
 [node name="ResumeButton" type="Button" parent="HUD/Overlay/PausePanel/PauseBox"]
 layout_mode = 2

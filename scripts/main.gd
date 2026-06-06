@@ -3,6 +3,9 @@
 class_name GameMain
 extends Node2D
 
+## 提前催下一波的阳光奖励（用准备时间换资源）
+const EARLY_WAVE_BONUS := 15
+
 ## ---- 预加载 ----
 var _tower_scene: PackedScene = preload("res://scenes/tower.tscn")
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
@@ -127,6 +130,9 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F11:
+			_toggle_fullscreen()
+			return
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
 			_toggle_pause()
 			return
@@ -139,11 +145,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_try_place_tower()
 
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		_start_game()
+		_on_start_wave_button()
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_SPACE:
-			_start_game()
+			_on_start_wave_button()
 		elif event.keycode == KEY_1:
 			_select_tower_type("arrow")
 		elif event.keycode == KEY_2:
@@ -264,6 +270,14 @@ func _sell_selected_tower() -> void:
 	hud.show_message("铲除成功，返还 %d 阳光" % refund)
 	queue_redraw()
 
+## 顶部"开始/催下一波"按钮（及空格/右键）的统一入口：未开局则开局，
+## 开局后若处于波间窗口则提前催下一波
+func _on_start_wave_button() -> void:
+	if not _game_started:
+		_start_game()
+	else:
+		_request_next_wave()
+
 func _start_game() -> void:
 	if _game_started or GameManager.is_game_over:
 		return
@@ -274,6 +288,14 @@ func _start_game() -> void:
 	hud.set_pause_button_paused(false)
 	wave_spawner.start_next_wave()
 	queue_redraw()
+
+## 提前开始下一波：成功则奖励少量阳光（用准备时间换资源）
+func _request_next_wave() -> void:
+	if wave_spawner.request_next_wave_now():
+		GameManager.add_gold(EARLY_WAVE_BONUS)
+		GameManager.request_sfx("wave")
+		hud.set_can_call_next_wave(false)
+		hud.show_message("提前迎战！阳光 +%d" % EARLY_WAVE_BONUS)
 
 func _restart_game() -> void:
 	get_tree().paused = false
@@ -313,12 +335,18 @@ func _toggle_pause() -> void:
 	else:
 		hud.hide_pause_screen()
 
-## 静音开关：切换主音频总线（音效与背景音乐同时静音），状态跨场景保留
+## 静音开关：经 GameManager 切换并持久化（音效与音乐同时生效）
 func _toggle_mute() -> void:
-	var master_bus := AudioServer.get_bus_index("Master")
-	var muted := not AudioServer.is_bus_mute(master_bus)
-	AudioServer.set_bus_mute(master_bus, muted)
-	hud.show_message("已静音" if muted else "已取消静音")
+	GameManager.toggle_mute()
+	hud.show_message("已静音" if GameManager.is_muted else "已取消静音")
+
+## 全屏开关（F11）
+func _toggle_fullscreen() -> void:
+	var mode := DisplayServer.window_get_mode()
+	if mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 ## ---- 地图绘制 ----
 

@@ -18,6 +18,8 @@ var _is_spawning: bool = false
 var _is_finished: bool = false
 var _current_group: int = 0
 var _is_waiting_to_spawn: bool = false
+var _between_waves: bool = false   # 处于"清完一波、下一波尚未开始"的可催窗口
+var _skip_requested: bool = false  # 玩家请求提前开始下一波
 
 ## ---- 节点引用 ----
 @onready var enemies_container: Node2D = get_node("../Enemies")
@@ -37,6 +39,7 @@ func start_next_wave() -> void:
 
 	var waves := GameManager.get_current_level_waves()
 	if _current_wave >= waves.size():
+		_between_waves = false
 		_is_finished = true
 		all_waves_completed.emit()
 		return
@@ -47,6 +50,8 @@ func start_next_wave() -> void:
 	if GameManager.is_game_over or _is_finished or not is_inside_tree():
 		return
 
+	_between_waves = false
+	_skip_requested = false
 	_is_spawning = true
 	_enemies_alive = 0
 	_spawned_count = 0
@@ -109,13 +114,33 @@ func _get_current_spawn_data() -> Dictionary:
 
 func _run_countdown() -> void:
 	for seconds_left in range(COUNTDOWN_SECONDS, 0, -1):
-		GameManager.notify_wave_countdown(seconds_left)
-		if not is_inside_tree():
+		if _skip_requested or not is_inside_tree():
 			return
-		var tree := get_tree()
-		await tree.create_timer(1.0).timeout
+		GameManager.notify_wave_countdown(seconds_left)
+		await _interruptible_wait(1.0)
 		if GameManager.is_game_over:
 			return
+
+## 可被"提前催下一波"打断的等待（按 0.05s 粒度轮询 skip 标志，
+## 同样响应游戏结束与节点移除）；总时长随 Engine.time_scale 缩放，与快进一致
+func _interruptible_wait(seconds: float) -> void:
+	var elapsed := 0.0
+	while elapsed < seconds:
+		if _skip_requested or GameManager.is_game_over or not is_inside_tree():
+			return
+		await get_tree().create_timer(0.05).timeout
+		elapsed += 0.05
+
+## 玩家请求提前开始下一波；仅在波间窗口有效，返回是否成功
+func request_next_wave_now() -> bool:
+	if not _between_waves or _is_finished or GameManager.is_game_over:
+		return false
+	if _current_wave >= GameManager.get_current_level_waves().size():
+		return false  # 最后一波清完的窗口，已无下一波可催
+	# 立即关闭窗口，避免重复触发（奖励/跳过只生效一次）；后续等待靠 skip 标志刷掉
+	_between_waves = false
+	_skip_requested = true
+	return true
 
 func _on_enemy_died() -> void:
 	_enemies_alive -= 1
@@ -125,11 +150,12 @@ func _on_enemy_died() -> void:
 		# 当前波次所有敌人已消灭
 		GameManager.notify_wave_completed(_current_wave + 1)
 		_current_wave += 1
-		# 短暂延迟后开始下一波（给玩家准备时间）
+		# 短暂延迟后开始下一波（给玩家准备时间，可被提前催波打断）
 		if not is_inside_tree():
 			return
-		var tree := get_tree()
-		await tree.create_timer(1.2).timeout
+		_between_waves = true
+		_skip_requested = false
+		await _interruptible_wait(1.2)
 		if not is_inside_tree():
 			return
 		start_next_wave()

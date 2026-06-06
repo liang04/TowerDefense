@@ -18,6 +18,7 @@ signal sfx_requested(sfx_name: String)
 signal level_changed(level_index: int, level_name: String)
 signal game_speed_changed(speed: float)
 signal enemy_killed(world_pos: Vector2, reward: int, color: Color)
+signal audio_settings_changed(volume: float, muted: bool)
 
 ## ---- 常量 ----
 const CELL_SIZE := 80       # 网格单元像素大小
@@ -36,6 +37,8 @@ const GAME_SPEEDS: Array[float] = [1.0, 2.0, 3.0]
 
 ## 进度存档路径（用户数据目录，跨会话持久化）
 const SAVE_PATH := "user://savegame.cfg"
+## 设置存档路径（音量/静音/游戏速度，独立于进度存档）
+const SETTINGS_PATH := "user://settings.cfg"
 
 const ENEMY_TYPE_NAMES := {
 	"grunt": "普通僵尸",
@@ -100,6 +103,8 @@ var current_wave: int = 0
 var enemies_killed: int = 0
 var enemies_leaked: int = 0
 var game_speed_index: int = 0
+var sound_volume: float = 1.0   # 主音量 0~1
+var is_muted: bool = false
 
 ## 网格占用表：key = Vector2i(列, 行), value = true 表示已占用
 var occupied_cells: Dictionary = {}
@@ -118,8 +123,11 @@ func _ready() -> void:
 		push_error("No level data configured.")
 		return
 	_load_progress()
+	_load_settings()
 	_apply_level_settings()
 	_init_path()
+	_apply_audio_settings()
+	_apply_time_scale()
 
 ## ---- 进度存档 ----
 
@@ -143,6 +151,41 @@ func _save_progress() -> void:
 	config.set_value("progress", "max_unlocked_level", max_unlocked_level)
 	config.set_value("progress", "last_level_index", current_level_index)
 	config.save(SAVE_PATH)
+
+## ---- 设置存档（音量/静音/速度）----
+
+func _load_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) != OK:
+		return
+	game_speed_index = clampi(int(config.get_value("settings", "game_speed_index", 0)), 0, GAME_SPEEDS.size() - 1)
+	sound_volume = clampf(float(config.get_value("settings", "sound_volume", 1.0)), 0.0, 1.0)
+	is_muted = bool(config.get_value("settings", "muted", false))
+
+func _save_settings() -> void:
+	var config := ConfigFile.new()
+	config.set_value("settings", "game_speed_index", game_speed_index)
+	config.set_value("settings", "sound_volume", sound_volume)
+	config.set_value("settings", "muted", is_muted)
+	config.save(SETTINGS_PATH)
+
+## 把音量/静音应用到主音频总线
+func _apply_audio_settings() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	AudioServer.set_bus_mute(master, is_muted)
+	AudioServer.set_bus_volume_db(master, linear_to_db(sound_volume) if sound_volume > 0.001 else -80.0)
+
+func set_volume(value: float) -> void:
+	sound_volume = clampf(value, 0.0, 1.0)
+	_apply_audio_settings()
+	_save_settings()
+	audio_settings_changed.emit(sound_volume, is_muted)
+
+func toggle_mute() -> void:
+	is_muted = not is_muted
+	_apply_audio_settings()
+	_save_settings()
+	audio_settings_changed.emit(sound_volume, is_muted)
 
 ## 初始化路径（坐标为网格 列,行）
 func _init_path() -> void:
@@ -344,6 +387,7 @@ func get_game_speed() -> float:
 func cycle_game_speed() -> void:
 	game_speed_index = (game_speed_index + 1) % GAME_SPEEDS.size()
 	_apply_time_scale()
+	_save_settings()
 	game_speed_changed.emit(get_game_speed())
 
 func _apply_time_scale() -> void:

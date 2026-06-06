@@ -26,6 +26,8 @@ GameManager="*res://scripts/game_manager.gd"
 
 window/size/viewport_width=960
 window/size/viewport_height=842
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [rendering]
 
