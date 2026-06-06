@@ -40,6 +40,11 @@ const SAVE_PATH := "user://savegame.cfg"
 ## 设置存档路径（音量/静音/游戏速度，独立于进度存档）
 const SETTINGS_PATH := "user://settings.cfg"
 
+## 自定义界面字体目录与候选文件名（放入即生效；默认字体在无 CJK 系统字体的
+## 机器上会把中文显示成方框，打包一个字体可彻底规避）
+const FONT_DIR := "res://assets/fonts/"
+const FONT_NAMES: Array[String] = ["ui.ttf", "ui.otf", "ui.woff2"]
+
 const ENEMY_TYPE_NAMES := {
 	"grunt": "普通僵尸",
 	"runner": "疾跑僵尸",
@@ -118,6 +123,7 @@ var path_points: PackedVector2Array = []
 
 ## ---- 初始化 ----
 func _ready() -> void:
+	_setup_font()
 	levels = LevelData.get_levels()
 	if levels.is_empty():
 		push_error("No level data configured.")
@@ -128,6 +134,22 @@ func _ready() -> void:
 	_init_path()
 	_apply_audio_settings()
 	_apply_time_scale()
+
+## 若 assets/fonts 下有字体文件则设为全局界面字体（保留原字体作回退），
+## 否则保持引擎默认；解决无 CJK 系统字体时中文显示为方框的问题
+func _setup_font() -> void:
+	for font_name in FONT_NAMES:
+		var path := FONT_DIR + font_name
+		if not FileAccess.file_exists(path):
+			continue
+		var font := FontFile.new()
+		if font.load_dynamic_font(path) != OK:
+			continue
+		var previous := ThemeDB.fallback_font
+		if previous:
+			font.fallbacks = [previous]
+		ThemeDB.fallback_font = font
+		return
 
 ## ---- 进度存档 ----
 
