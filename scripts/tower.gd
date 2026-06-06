@@ -242,7 +242,7 @@ func upgrade() -> bool:
 	return true
 
 func get_sell_value() -> int:
-	return int(round(float(total_spent) * 0.6))
+	return int(round(float(total_spent) * 0.5))
 
 func get_display_name() -> String:
 	return "%s Lv.%d" % [tower_name, level]

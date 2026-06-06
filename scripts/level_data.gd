@@ -5,7 +5,7 @@ static func get_levels() -> Array[Dictionary]:
 		{
 			"name": "草地练习场",
 			"description": "标准花园路线，适合学习基础种植和升级。",
-			"starting_gold": 160,
+			"starting_gold": 135,
 			"starting_lives": 20,
 			"background": Color(0.11, 0.2, 0.13),
 			"background_image": "res://assets/maps/cartoon_grassland.png",

@@ -6,7 +6,7 @@ extends Node
 ## ---- 信号 ----
 signal all_waves_completed
 
-const COUNTDOWN_SECONDS := 3
+const COUNTDOWN_SECONDS := 2
 
 ## ---- 预加载 ----
 var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
@@ -129,7 +129,7 @@ func _on_enemy_died() -> void:
 		if not is_inside_tree():
 			return
 		var tree := get_tree()
-		await tree.create_timer(2.0).timeout
+		await tree.create_timer(1.2).timeout
 		if not is_inside_tree():
 			return
 		start_next_wave()
