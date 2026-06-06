@@ -25,6 +25,9 @@ var _slow_timer: float = 0.0
 var _slow_multiplier: float = 1.0
 var _hit_flash_timer: float = 0.0
 var _hit_punch_tween: Tween = null
+var _burn_timer: float = 0.0       # 灼烧剩余时间
+var _burn_dps: float = 0.0         # 灼烧每秒伤害
+var _burn_accum: float = 0.0       # 不足 1 点的灼烧伤害累积
 var _anim: AnimatedSprite2D = null
 var _use_sprite: bool = false
 
@@ -70,11 +73,16 @@ func _process(delta: float) -> void:
 
 	var was_slowed := _slow_timer > 0.0
 	var was_flashing := _hit_flash_timer > 0.0
+	var was_burning := _burn_timer > 0.0
 
 	_slow_timer = maxf(_slow_timer - delta, 0.0)
 	_hit_flash_timer = maxf(_hit_flash_timer - delta, 0.0)
 	if _slow_timer <= 0.0:
 		_slow_multiplier = 1.0
+
+	# 灼烧持续伤害（可致死则提前结束本帧逻辑）
+	if _burn_timer > 0.0 and _tick_burn(delta):
+		return
 
 	var target := _waypoints[_current_wp_index]
 	var direction := (target - global_position).normalized()
@@ -93,8 +101,10 @@ func _process(delta: float) -> void:
 	if _use_sprite:
 		_update_sprite_visual(direction)
 
-	# 移动本身由节点变换处理，无需重绘；仅在减速光圈 / 受击闪白刚结束时重绘
-	if (was_slowed and _slow_timer <= 0.0) or (was_flashing and _hit_flash_timer <= 0.0):
+	# 移动本身由节点变换处理，无需重绘；灼烧中（掉血+火圈）每帧重绘，
+	# 减速光圈 / 受击闪白刚结束时也重绘
+	if _burn_timer > 0.0 or was_burning \
+			or (was_slowed and _slow_timer <= 0.0) or (was_flashing and _hit_flash_timer <= 0.0):
 		queue_redraw()
 
 ## 精灵模式下：按行进方向水平翻转，受击时整体提亮
@@ -129,6 +139,30 @@ func apply_slow(multiplier: float, duration: float) -> void:
 	_slow_multiplier = minf(_slow_multiplier, clampf(multiplier, 0.2, 1.0))
 	_slow_timer = maxf(_slow_timer, duration)
 	queue_redraw()
+
+## 施加/刷新灼烧（取更高 dps、刷新持续时间）
+func apply_burn(dps: float, duration: float) -> void:
+	if dps <= 0.0 or duration <= 0.0:
+		return
+	_burn_dps = maxf(_burn_dps, dps)
+	_burn_timer = maxf(_burn_timer, duration)
+	queue_redraw()
+
+## 结算一帧灼烧伤害（直接扣血、不触发受击闪白/缩放）；返回是否致死
+func _tick_burn(delta: float) -> bool:
+	_burn_timer = maxf(_burn_timer - delta, 0.0)
+	_burn_accum += _burn_dps * delta
+	var burn_damage := int(_burn_accum)
+	if burn_damage > 0:
+		_burn_accum -= float(burn_damage)
+		hp -= burn_damage
+		if hp <= 0:
+			_on_killed()
+			return true
+	if _burn_timer <= 0.0:
+		_burn_dps = 0.0
+		_burn_accum = 0.0
+	return false
 
 func setup(data: Dictionary) -> void:
 	enemy_type = String(data.get("type", "grunt"))
@@ -199,6 +233,9 @@ func _draw() -> void:
 
 	if _slow_timer > 0.0:
 		draw_rect(Rect2(-18, -18, 36, 36), Color(0.4, 0.85, 1.0, 0.35), false, 2.0)
+
+	if _burn_timer > 0.0:
+		draw_rect(Rect2(-19, -19, 38, 38), Color(1.0, 0.5, 0.12, 0.4), false, 2.0)
 
 	# 血量条（Boss 更宽更高、位置上移，以匹配更大的体型）
 	var is_boss := enemy_type == "boss"

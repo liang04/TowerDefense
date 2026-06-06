@@ -105,6 +105,20 @@ var tower_configs: Dictionary = {
 		"color": Color(0.35, 0.82, 0.95),
 		"description": "伤害低，可减速僵尸",
 	},
+	"pepper": {
+		"name": "火爆辣椒",
+		"cost": 65,
+		"damage": 4,
+		"range": 150.0,
+		"cooldown": 0.8,
+		"slow_multiplier": 1.0,
+		"slow_duration": 0.0,
+		"splash_radius": 0.0,
+		"burn_dps": 8.0,
+		"burn_duration": 2.5,
+		"color": Color(0.95, 0.45, 0.15),
+		"description": "直伤低，点燃后持续灼烧（克高血）",
+	},
 }
 
 ## ---- 状态 ----
@@ -339,6 +353,10 @@ func spend_gold(amount: int) -> bool:
 	gold_changed.emit(gold)
 	return true
 
+## 有序的植物类型列表（供数据驱动的植物栏与热键使用）
+func get_tower_types() -> Array:
+	return tower_configs.keys()
+
 func get_tower_config(tower_type: String) -> Dictionary:
 	if tower_type in tower_configs:
 		return tower_configs[tower_type]
@@ -360,6 +378,8 @@ func get_scaled_tower_stats(tower_type: String, tower_level: int = 1) -> Diction
 		"slow_multiplier": float(config["slow_multiplier"]),
 		"slow_duration": float(config["slow_duration"]),
 		"splash_radius": float(config.get("splash_radius", 0.0)),
+		"burn_dps": float(config.get("burn_dps", 0.0)) * damage_scale,
+		"burn_duration": float(config.get("burn_duration", 0.0)),
 	}
 
 func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
@@ -367,6 +387,8 @@ func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
 	var slow_multiplier := float(stats["slow_multiplier"])
 	var slow_duration := float(stats["slow_duration"])
 	var splash_radius := float(stats["splash_radius"])
+	var burn_dps := float(stats["burn_dps"])
+	var burn_duration := float(stats["burn_duration"])
 	var parts: Array[String] = [
 		"伤害 %d" % int(stats["damage"]),
 		"射程 %d" % int(round(float(stats["range"]))),
@@ -375,6 +397,9 @@ func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
 
 	if splash_radius > 0.0:
 		parts.append("溅射 R%d" % int(round(splash_radius)))
+
+	if burn_dps > 0.0 and burn_duration > 0.0:
+		parts.append("灼烧 %d/s × %.1fs" % [int(round(burn_dps)), burn_duration])
 
 	if slow_duration > 0.0 and slow_multiplier < 1.0:
 		parts.append("减速 %d%% %.1fs" % [int(round((1.0 - slow_multiplier) * 100.0)), slow_duration])

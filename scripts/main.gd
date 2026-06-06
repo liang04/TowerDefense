@@ -150,12 +150,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_SPACE:
 			_on_start_wave_button()
-		elif event.keycode == KEY_1:
-			_select_tower_type("arrow")
-		elif event.keycode == KEY_2:
-			_select_tower_type("cannon")
-		elif event.keycode == KEY_3:
-			_select_tower_type("frost")
+		elif event.keycode >= KEY_1 and event.keycode <= KEY_9:
+			_select_tower_type_by_index(event.keycode - KEY_1)
 		elif event.keycode == KEY_U:
 			_upgrade_selected_tower()
 		elif event.keycode == KEY_X:
@@ -206,6 +202,12 @@ func _get_place_error_message(col: int, row: int) -> String:
 		return "阳光不足，需要 %d" % cost
 
 	return "这里不能种植"
+
+## 数字键按顺序选择植物（1→第 1 种，以此类推），越界忽略
+func _select_tower_type_by_index(index: int) -> void:
+	var types := GameManager.get_tower_types()
+	if index >= 0 and index < types.size():
+		_select_tower_type(types[index])
 
 func _select_tower_type(tower_type: String) -> void:
 	GameManager.set_selected_tower_type(tower_type)

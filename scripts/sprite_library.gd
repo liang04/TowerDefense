@@ -27,6 +27,7 @@ const TOWER_TUNING := {
 	"arrow": {"fps": 6.0, "scale": 0.7},
 	"cannon": {"fps": 6.0, "scale": 0.75},
 	"frost": {"fps": 6.0, "scale": 0.7},
+	"pepper": {"fps": 6.0, "scale": 0.7},
 }
 const DEFAULT_FPS := 8.0
 const DEFAULT_SCALE := 0.6

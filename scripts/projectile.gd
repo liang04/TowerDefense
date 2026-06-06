@@ -6,6 +6,8 @@ var damage: int = 1
 var slow_multiplier: float = 1.0
 var slow_duration: float = 0.0
 var splash_radius: float = 0.0  # > 0 时为范围溅射，命中点半径内全体受伤
+var burn_dps: float = 0.0       # > 0 时命中附加灼烧
+var burn_duration: float = 0.0
 var projectile_color: Color = Color(1.0, 0.85, 0.25)
 
 var _target: Enemy = null
@@ -14,7 +16,7 @@ var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
 var _effects_container: Node = null
 
-func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value: float, slow_time: float, color_value: Color, splash_value: float = 0.0) -> void:
+func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value: float, slow_time: float, color_value: Color, splash_value: float = 0.0, burn_dps_value: float = 0.0, burn_duration_value: float = 0.0) -> void:
 	global_position = start_position
 	_target = target
 	damage = damage_value
@@ -22,6 +24,8 @@ func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value
 	slow_duration = slow_time
 	projectile_color = color_value
 	splash_radius = splash_value
+	burn_dps = burn_dps_value
+	burn_duration = burn_duration_value
 	if is_instance_valid(_target):
 		_last_target_position = _target.global_position
 	queue_redraw()
@@ -69,6 +73,8 @@ func _damage_enemy(enemy: Enemy) -> void:
 	enemy.take_damage(damage)
 	if slow_duration > 0.0:
 		enemy.apply_slow(slow_multiplier, slow_duration)
+	if burn_dps > 0.0 and burn_duration > 0.0:
+		enemy.apply_burn(burn_dps, burn_duration)
 
 func _spawn_hit_effect() -> void:
 	var effects_container := _get_effects_container()

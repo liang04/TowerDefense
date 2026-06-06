@@ -26,6 +26,8 @@ var attack_cooldown: float = 1.0  # 秒
 var slow_multiplier: float = 1.0
 var slow_duration: float = 0.0
 var splash_radius: float = 0.0
+var burn_dps: float = 0.0
+var burn_duration: float = 0.0
 var body_color: Color = Color(0.2, 0.45, 0.95)
 
 ## 目标重选间隔（秒）：避免每帧对全体敌人做一次全量扫描
@@ -170,7 +172,7 @@ func _attack(target: Enemy) -> void:
 
 	var projectile := _projectile_scene.instantiate() as Projectile
 	projectiles_container.add_child(projectile)
-	projectile.setup(global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius)
+	projectile.setup(global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius, burn_dps, burn_duration)
 	_spawn_muzzle_flash(projectiles_container, target)
 	GameManager.request_sfx("shoot")
 	_shot_flash_timer = 0.12
@@ -261,6 +263,8 @@ func _apply_config() -> void:
 	slow_multiplier = float(stats["slow_multiplier"])
 	slow_duration = float(stats["slow_duration"])
 	splash_radius = float(stats["splash_radius"])
+	burn_dps = float(stats["burn_dps"])
+	burn_duration = float(stats["burn_duration"])
 	var color_value = config["color"]
 	if color_value is Color:
 		body_color = color_value

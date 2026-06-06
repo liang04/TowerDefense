@@ -41,9 +41,7 @@ const MESSAGE_TIME := 3.0
 @onready var level_select_description: Label = $Overlay/LevelSelectPanel/LevelSelectBox/LevelSelectDescription
 @onready var next_level_button: Button = $Overlay/ResultPanel/ResultBox/NextLevelButton
 @onready var restart_result_button: Button = $Overlay/ResultPanel/ResultBox/RestartResultButton
-@onready var arrow_tower_button: Button = $MarginContainer/VBoxContainer/BottomBar/ArrowTowerButton
-@onready var cannon_tower_button: Button = $MarginContainer/VBoxContainer/BottomBar/CannonTowerButton
-@onready var frost_tower_button: Button = $MarginContainer/VBoxContainer/BottomBar/FrostTowerButton
+@onready var plant_bar: HBoxContainer = $MarginContainer/VBoxContainer/BottomBar/PlantBar
 @onready var priority_button: Button = $MarginContainer/VBoxContainer/BottomBar/PriorityButton
 @onready var upgrade_button: Button = $MarginContainer/VBoxContainer/BottomBar/UpgradeButton
 @onready var sell_button: Button = $MarginContainer/VBoxContainer/BottomBar/SellButton
@@ -62,6 +60,7 @@ var _damage_flash_tween: Tween = null
 ## ---- 生命周期 ----
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_build_plant_buttons()
 	_make_gameplay_hud_click_through($MarginContainer)
 
 	# 连接 GameManager 信号
@@ -96,17 +95,9 @@ func _ready() -> void:
 	cancel_level_button.pressed.connect(_on_cancel_level_pressed)
 	next_level_button.pressed.connect(_on_next_level_pressed)
 	restart_result_button.pressed.connect(_on_restart_pressed)
-	arrow_tower_button.pressed.connect(_on_tower_button_pressed.bind("arrow"))
-	cannon_tower_button.pressed.connect(_on_tower_button_pressed.bind("cannon"))
-	frost_tower_button.pressed.connect(_on_tower_button_pressed.bind("frost"))
 	priority_button.pressed.connect(_on_priority_pressed)
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
 	sell_button.pressed.connect(_on_sell_pressed)
-	_tower_buttons = {
-		"arrow": arrow_tower_button,
-		"cannon": cannon_tower_button,
-		"frost": frost_tower_button,
-	}
 
 	_setup_damage_flash()
 
@@ -134,6 +125,16 @@ func flash_damage() -> void:
 	_damage_flash_tween = create_tween()
 	_damage_flash_tween.tween_property(_damage_flash, "color:a", 0.0, 0.45)
 
+## 按 GameManager.tower_configs 动态生成植物按钮（加植物只需改数据，无需改场景）
+func _build_plant_buttons() -> void:
+	_tower_buttons = {}
+	for tower_type in GameManager.get_tower_types():
+		var button := Button.new()
+		button.focus_mode = Control.FOCUS_NONE
+		button.pressed.connect(_on_tower_button_pressed.bind(tower_type))
+		plant_bar.add_child(button)
+		_tower_buttons[tower_type] = button
+
 func _make_gameplay_hud_click_through(node: Node) -> void:
 	if node is Control:
 		var control := node as Control
@@ -156,7 +157,7 @@ func _update_all() -> void:
 	_update_selected_tower_text()
 	_update_speed_button(GameManager.get_game_speed())
 	set_start_wave_available(true)
-	message_label.text = "1/2/3 选植物，左键种植/选中，空格催下一波，T 切目标，F 快进，M 静音，F11 全屏"
+	message_label.text = "数字键选植物，左键种植/选中，空格催下一波，T 切目标，F 快进，M 静音，F11 全屏"
 
 func _on_gold_changed(new_gold: int) -> void:
 	gold_label.text = "阳光: %d" % new_gold
