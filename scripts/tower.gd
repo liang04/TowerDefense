@@ -54,6 +54,7 @@ var _use_sprite: bool = false
 ## ---- 生命周期 ----
 func _ready() -> void:
 	_apply_config()
+	add_child(SpriteLibrary.make_shadow(20.0, 8.0, 22.0))
 	_setup_sprite()
 
 ## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
@@ -64,6 +65,7 @@ func _setup_sprite() -> void:
 	_anim = AnimatedSprite2D.new()
 	_anim.sprite_frames = frames
 	_anim.scale = Vector2.ONE * SpriteLibrary.get_tower_scale(tower_type)
+	_anim.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	# 置于父节点之后绘制，使等级点/射程圈/攻击线叠加在精灵之上
 	_anim.show_behind_parent = true
 	add_child(_anim)

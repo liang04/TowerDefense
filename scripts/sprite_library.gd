@@ -89,4 +89,19 @@ static func _load_png(path: String) -> Texture2D:
 	var image := Image.new()
 	if image.load_png_from_buffer(bytes) != OK:
 		return null
+	# 生成 mipmap：源图 128px 会被缩小显示，无 mipmap 时移动会产生锯齿/闪烁
+	image.generate_mipmaps()
 	return ImageTexture.create_from_image(image)
+
+## 生成一个椭圆落地阴影节点（z_index = -1，绘制在单位精灵下方），增强立体感
+static func make_shadow(radius_x: float, radius_y: float, y_offset: float) -> Polygon2D:
+	var shadow := Polygon2D.new()
+	var points := PackedVector2Array()
+	var steps := 18
+	for i in range(steps):
+		var angle := TAU * float(i) / float(steps)
+		points.append(Vector2(cos(angle) * radius_x, sin(angle) * radius_y + y_offset))
+	shadow.polygon = points
+	shadow.color = Color(0, 0, 0, 0.22)
+	shadow.z_index = -1
+	return shadow

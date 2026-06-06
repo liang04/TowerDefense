@@ -32,6 +32,7 @@ var _map_background_path: String = ""
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_set_gameplay_nodes_pausable()
+	_setup_render_order()
 	_setup_ambiance()
 	# 连接信号
 	GameManager.game_over.connect(_on_game_over)
@@ -46,6 +47,15 @@ func _setup_ambiance() -> void:
 	var ambiance := CanvasModulate.new()
 	ambiance.color = GameManager.get_level_ambient_color()
 	add_child(ambiance)
+
+## 渲染顺序：塔与敌人按 Y 轴跨容器排序（靠下者绘制在前），
+## 子弹与特效用更高 z 始终置顶，地图保持在最底层
+func _setup_render_order() -> void:
+	y_sort_enabled = true
+	towers_container.y_sort_enabled = true
+	enemies_container.y_sort_enabled = true
+	projectiles_container.z_index = 5
+	effects_container.z_index = 6
 
 ## ---- 世界特效 ----
 
@@ -389,8 +399,14 @@ func _draw_ground_details(background_color: Color) -> void:
 					var x := float(blade * 5 - 5)
 					draw_line(pos + Vector2(x, 5), pos + Vector2(x + 2, -5), grass_color, 1.6)
 
+## 是否使用了关卡背景图（缓存命中，开销可忽略）
+func _has_background_image() -> bool:
+	return _get_map_background_texture() != null
+
 func _draw_buildable_cells() -> void:
 	var buildable_color := GameManager.get_level_buildable_color()
+	# 有背景图时只描边、不铺色，避免遮住美术
+	var fill := not _has_background_image()
 	for row in range(GameManager.GRID_ROWS):
 		for col in range(GameManager.GRID_COLS):
 			var cell := Vector2i(col, row)
@@ -403,7 +419,8 @@ func _draw_buildable_cells() -> void:
 				GameManager.CELL_SIZE - 16,
 				GameManager.CELL_SIZE - 16
 			)
-			draw_rect(rect, buildable_color)
+			if fill:
+				draw_rect(rect, buildable_color)
 			draw_rect(rect, Color(0.37, 0.85, 0.42, 0.28), false, 1.0)
 
 func _draw_tutorial_recommendations() -> void:
@@ -430,6 +447,9 @@ func _draw_tutorial_recommendations() -> void:
 		draw_circle(center, 6.0, Color(1.0, 0.95, 0.25, 0.95))
 
 func _draw_grid() -> void:
+	# 有背景图时不画网格线，避免在美术上叠加"线框"观感
+	if _has_background_image():
+		return
 	# 绘制网格线
 	for col in range(GameManager.GRID_COLS + 1):
 		var x := col * GameManager.CELL_SIZE
