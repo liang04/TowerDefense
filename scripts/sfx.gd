@@ -5,9 +5,9 @@
 ## 绕过 Godot 导入系统（与项目里 PNG/SVG 的加载方式一致）。
 ##
 ## 约定：
-##   音效：assets/audio/sfx/<name>.ogg 或 .wav   （name 同请求名）
+##   音效：assets/audio/sfx/<name>.ogg / .mp3 / .wav   （name 同请求名）
 ##         shoot / hit / kill / leak / wave / upgrade / sell / win / game_over
-##   音乐：assets/audio/bgm/theme.ogg 或 .wav     （循环播放）
+##   音乐：assets/audio/bgm/theme.ogg / .mp3 / .wav     （循环播放）
 extends Node
 
 const MIX_RATE := 22050
@@ -87,6 +87,8 @@ func _start_bgm() -> void:
 	# 设为循环
 	if stream is AudioStreamOggVorbis:
 		(stream as AudioStreamOggVorbis).loop = true
+	elif stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
 	elif stream is AudioStreamWAV:
 		(stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
 
@@ -98,11 +100,14 @@ func _start_bgm() -> void:
 
 ## ---- 文件加载（绕过导入系统）----
 
-## 给定不含扩展名的基础路径，依次尝试 .ogg / .wav；都没有返回 null
+## 给定不含扩展名的基础路径，依次尝试 .ogg / .mp3 / .wav；都没有返回 null
 func _load_audio_file(base_path: String) -> AudioStream:
 	var ogg_path := base_path + ".ogg"
 	if FileAccess.file_exists(ogg_path):
 		return AudioStreamOggVorbis.load_from_file(ogg_path)
+	var mp3_path := base_path + ".mp3"
+	if FileAccess.file_exists(mp3_path):
+		return AudioStreamMP3.load_from_file(mp3_path)
 	var wav_path := base_path + ".wav"
 	if FileAccess.file_exists(wav_path):
 		return AudioStreamWAV.load_from_file(wav_path)

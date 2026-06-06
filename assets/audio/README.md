@@ -4,12 +4,12 @@
 就会**优先播放真实音频**；**没放文件时**自动回退到程序合成的"哔"声，游戏照常出声。
 文件以"直接从磁盘载入"方式加载，**无需在编辑器里导入**，放进去即可。
 
-支持格式：`.ogg`（推荐，尤其音乐）或 `.wav`。同名时优先用 `.ogg`。
+支持格式：`.ogg`（推荐，尤其音乐）、`.mp3` 或 `.wav`。同名时优先用 `.ogg`，其次 `.mp3`。
 
 ## 音效
 
 ```
-assets/audio/sfx/<name>.ogg   （或 .wav）
+assets/audio/sfx/<name>.ogg   （或 .mp3 / .wav）
 ```
 
 `<name>` 必须是下列之一（对应游戏事件）：
@@ -31,10 +31,10 @@ assets/audio/sfx/<name>.ogg   （或 .wav）
 ## 背景音乐
 
 ```
-assets/audio/bgm/theme.ogg    （或 .wav，循环播放）
+assets/audio/bgm/theme.ogg    （或 .mp3 / .wav，循环播放）
 ```
 
-放一个 `theme.ogg` 即可，进入游戏自动循环播放。建议用 OGG（循环更顺滑）。
+放一个 `theme.ogg` 或 `theme.mp3` 即可，进入游戏自动循环播放。建议用 OGG（循环更顺滑）。
 
 > 提示：游戏内按 **M 键**可一键静音/取消静音（音效与音乐同时生效，状态跨场景保留）。
 
@@ -44,7 +44,7 @@ assets/audio/bgm/theme.ogg    （或 .wav，循环播放）
 - <https://freesound.org>（注意筛选 CC0 许可）
 - <https://opengameart.org>（筛选 CC0）
 
-下载后挑合适的音效，**按上表重命名**放进 `sfx/`；音乐重命名为 `theme.ogg` 放进 `bgm/` 即可。
+下载后挑合适的音效，**按上表重命名**放进 `sfx/`；音乐重命名为 `theme.ogg` 或 `theme.mp3` 放进 `bgm/` 即可。
 
 ## 调音量
 
