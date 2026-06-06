@@ -15,7 +15,7 @@ var max_hp: int = 30
 var hp: int = 30
 var enemy_type: String = "grunt"
 var speed: float = 120.0     # 像素/秒
-var reward: int = 10         # 击杀金币奖励
+var reward: int = 10         # 击退后的阳光奖励
 var body_color: Color = Color(0.2, 0.8, 0.2)
 
 ## ---- 内部状态 ----

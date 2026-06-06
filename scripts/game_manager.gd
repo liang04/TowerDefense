@@ -1,5 +1,5 @@
 ## 游戏全局管理器（Autoload 单例）
-## 管理：金币、生命、塔放置网格、游戏状态
+## 管理：阳光、生命、植物放置网格、游戏状态
 extends Node
 
 var LevelData = preload("res://scripts/level_data.gd")
@@ -38,20 +38,20 @@ const GAME_SPEEDS: Array[float] = [1.0, 2.0, 3.0]
 const SAVE_PATH := "user://savegame.cfg"
 
 const ENEMY_TYPE_NAMES := {
-	"grunt": "普通怪",
-	"runner": "快速怪",
-	"tank": "重甲怪",
+	"grunt": "普通僵尸",
+	"runner": "疾跑僵尸",
+	"tank": "铁桶僵尸",
 }
 
 const ENEMY_TYPE_ADVICE := {
-	"grunt": "箭塔",
-	"runner": "冰塔",
-	"tank": "炮塔",
+	"grunt": "豌豆射手",
+	"runner": "寒冰花",
+	"tank": "爆裂果",
 }
 
 var tower_configs: Dictionary = {
 	"arrow": {
-		"name": "箭塔",
+		"name": "豌豆射手",
 		"cost": 45,
 		"damage": 9,
 		"range": 170.0,
@@ -59,11 +59,11 @@ var tower_configs: Dictionary = {
 		"slow_multiplier": 1.0,
 		"slow_duration": 0.0,
 		"splash_radius": 0.0,
-		"color": Color(0.2, 0.45, 0.95),
-		"description": "均衡、便宜、射速快",
+		"color": Color(0.32, 0.72, 0.28),
+		"description": "基础输出，便宜，射速快",
 	},
 	"cannon": {
-		"name": "炮塔",
+		"name": "爆裂果",
 		"cost": 75,
 		"damage": 24,
 		"range": 145.0,
@@ -71,11 +71,11 @@ var tower_configs: Dictionary = {
 		"slow_multiplier": 1.0,
 		"slow_duration": 0.0,
 		"splash_radius": 58.0,
-		"color": Color(0.9, 0.35, 0.18),
-		"description": "伤害高、射速慢、范围溅射",
+		"color": Color(0.92, 0.42, 0.18),
+		"description": "高伤害，射速慢，范围溅射",
 	},
 	"frost": {
-		"name": "冰塔",
+		"name": "寒冰花",
 		"cost": 60,
 		"damage": 5,
 		"range": 155.0,
@@ -83,8 +83,8 @@ var tower_configs: Dictionary = {
 		"slow_multiplier": 0.55,
 		"slow_duration": 1.4,
 		"splash_radius": 0.0,
-		"color": Color(0.25, 0.75, 0.95),
-		"description": "伤害低，可减速",
+		"color": Color(0.35, 0.82, 0.95),
+		"description": "伤害低，可减速僵尸",
 	},
 }
 
@@ -421,7 +421,7 @@ func get_wave_preview_text(wave_num: int, prefix: String = "下一波") -> Strin
 	for enemy_type in order:
 		var enemy_name := String(ENEMY_TYPE_NAMES.get(enemy_type, enemy_type))
 		parts.append("%s x%d" % [enemy_name, int(counts[enemy_type])])
-		var advice_text := String(ENEMY_TYPE_ADVICE.get(enemy_type, "箭塔"))
+		var advice_text := String(ENEMY_TYPE_ADVICE.get(enemy_type, "豌豆射手"))
 		if not (advice_text in advice):
 			advice.append(advice_text)
 

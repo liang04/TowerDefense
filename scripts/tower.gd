@@ -15,7 +15,7 @@ static var _tower_art_textures: Dictionary = {}
 
 ## ---- 属性 ----
 var tower_type: String = "arrow"
-var tower_name: String = "箭塔"
+var tower_name: String = "豌豆射手"
 var level: int = 1
 var max_level: int = 3
 var grid_cell: Vector2i = Vector2i.ZERO

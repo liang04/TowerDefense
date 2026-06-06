@@ -1,4 +1,4 @@
-## 飘字：在世界坐标处上浮并淡出的短文本（如击杀金币奖励）
+## 飘字：在世界坐标处上浮并淡出的短文本（如击退阳光奖励）
 class_name FloatingText
 extends Node2D
 

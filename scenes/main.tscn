@@ -56,7 +56,7 @@ theme_override_constants/separation = 12
 
 [node name="GoldLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
-text = "金币: 160"
+text = "阳光: 160"
 
 [node name="LivesLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
@@ -101,11 +101,11 @@ size_flags_vertical = 3
 
 [node name="WavePreviewLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "下一波 1/5：普通怪 x5 | 建议：箭塔"
+text = "下一波 1/5：普通僵尸 x5 | 建议：豌豆射手"
 
 [node name="InfoLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "当前: 箭塔 | 费用: 45 | 均衡、便宜、射速快"
+text = "当前: 豌豆射手 | 费用: 45 | 基础输出，便宜，射速快"
 
 [node name="MessageLabel" type="Label" parent="HUD/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -118,20 +118,20 @@ theme_override_constants/separation = 12
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-text = "敌人：绿色普通 | 黄色快速 | 灰色重甲"
+text = "僵尸：普通 | 疾跑 | 铁桶"
 vertical_alignment = 1
 
 [node name="ArrowTowerButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
 layout_mode = 2
-text = "箭塔 45"
+text = "豌豆射手 45"
 
 [node name="CannonTowerButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
 layout_mode = 2
-text = "炮塔 75"
+text = "爆裂果 75"
 
 [node name="FrostTowerButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
 layout_mode = 2
-text = "冰塔 60"
+text = "寒冰花 60"
 
 [node name="PriorityButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
 layout_mode = 2
@@ -146,7 +146,7 @@ text = "升级"
 [node name="SellButton" type="Button" parent="HUD/MarginContainer/VBoxContainer/BottomBar"]
 layout_mode = 2
 disabled = true
-text = "出售"
+text = "铲除"
 
 [node name="Overlay" type="Control" parent="HUD"]
 visible = false
@@ -185,12 +185,12 @@ theme_override_constants/separation = 12
 
 [node name="StartTitle" type="Label" parent="HUD/Overlay/StartPanel/StartBox"]
 layout_mode = 2
-text = "塔防练习场"
+text = "花园防线"
 horizontal_alignment = 1
 
 [node name="StartHelp" type="Label" parent="HUD/Overlay/StartPanel/StartBox"]
 layout_mode = 2
-text = "绿色地块可以建塔，土路不能建塔。\n1/2/3 选塔，左键建造或选塔，U 升级，X 出售。\nP 或 Esc 暂停。"
+text = "绿色地块可以种植物，土路不能种植。\n1/2/3 选植物，左键种植或选中植物，U 升级，X 铲除。\nP 或 Esc 暂停。"
 horizontal_alignment = 1
 
 [node name="StartButton" type="Button" parent="HUD/Overlay/StartPanel/StartBox"]
@@ -255,7 +255,7 @@ horizontal_alignment = 1
 
 [node name="LevelSelectDescription" type="Label" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]
 layout_mode = 2
-text = "标准路线，适合学习基础建塔和升级。"
+text = "标准花园路线，适合学习基础种植和升级。"
 horizontal_alignment = 1
 
 [node name="LevelSelectControls" type="HBoxContainer" parent="HUD/Overlay/LevelSelectPanel/LevelSelectBox"]

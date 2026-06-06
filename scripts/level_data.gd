@@ -4,7 +4,7 @@ static func get_levels() -> Array[Dictionary]:
 	return [
 		{
 			"name": "草地练习场",
-			"description": "标准路线，适合学习基础建塔和升级。",
+			"description": "标准花园路线，适合学习基础种植和升级。",
 			"starting_gold": 160,
 			"starting_lives": 20,
 			"background": Color(0.11, 0.2, 0.13),
@@ -48,11 +48,11 @@ static func get_levels() -> Array[Dictionary]:
 		},
 		{
 			"name": "峡谷回廊",
-			"description": "更长路线，敌人分批更多，适合练习补塔和升级。",
+			"description": "更长的后院路线，僵尸分批更多，适合练习补种和升级。",
 			"starting_gold": 190,
 			"starting_lives": 18,
 			"background": Color(0.13, 0.17, 0.18),
-			"background_image": "res://assets/maps/cartoon_grassland.png",
+			"background_image": "res://assets/maps/cartoon_canyon.png",
 			"buildable_color": Color(0.18, 0.48, 0.4, 0.24),
 			"path_color": Color(0.38, 0.31, 0.24),
 			"ambient_color": Color(0.88, 0.92, 1.0),
@@ -84,11 +84,11 @@ static func get_levels() -> Array[Dictionary]:
 		},
 		{
 			"name": "熔岩急道",
-			"description": "路线较短、压力更高，适合练习冰塔减速和炮塔集火。",
+			"description": "路线较短、压力更高，适合练习寒冰花减速和爆裂果集火。",
 			"starting_gold": 220,
 			"starting_lives": 14,
 			"background": Color(0.18, 0.14, 0.12),
-			"background_image": "res://assets/maps/cartoon_grassland.png",
+			"background_image": "res://assets/maps/cartoon_lava.png",
 			"buildable_color": Color(0.42, 0.24, 0.18, 0.26),
 			"path_color": Color(0.46, 0.25, 0.16),
 			"ambient_color": Color(1.0, 0.85, 0.76),

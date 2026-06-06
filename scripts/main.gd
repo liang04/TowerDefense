@@ -1,5 +1,5 @@
 ## 主场景脚本
-## 处理地图绘制、塔放置输入、游戏流程
+## 处理地图绘制、植物放置输入、游戏流程
 class_name GameMain
 extends Node2D
 
@@ -83,7 +83,7 @@ func _init_tutorial() -> void:
 	_tutorial_active = true
 	_tutorial_first_tower_built = false
 	_recommended_cells = _find_recommended_build_cells()
-	hud.show_message("先在高亮绿色格子建一座箭塔，再点击开始", true)
+	hud.show_message("先在高亮绿色格子种一株豌豆射手，再点击开始", true)
 
 func _find_recommended_build_cells() -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -161,7 +161,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_R:
 			_restart_game()
 
-## ---- 塔放置 ----
+## ---- 植物放置 ----
 
 func _try_place_tower() -> void:
 	var col := _hover_cell.x
@@ -187,17 +187,17 @@ func _try_place_tower() -> void:
 func _get_place_error_message(col: int, row: int) -> String:
 	var cell := Vector2i(col, row)
 	if col < 0 or col >= GameManager.GRID_COLS or row < 0 or row >= GameManager.GRID_ROWS:
-		return "不能在地图外建塔"
+		return "不能在地图外种植"
 	if cell in GameManager.path_cells:
-		return "道路上不能建塔"
+		return "僵尸道路上不能种植"
 	if cell in GameManager.occupied_cells:
-		return "这里已经有塔了"
+		return "这里已经有植物了"
 
 	var cost := GameManager.get_tower_cost(GameManager.selected_tower_type)
 	if GameManager.gold < cost:
-		return "金币不足，需要 %d" % cost
+		return "阳光不足，需要 %d" % cost
 
-	return "这里不能建塔"
+	return "这里不能种植"
 
 func _select_tower_type(tower_type: String) -> void:
 	GameManager.set_selected_tower_type(tower_type)
@@ -212,7 +212,7 @@ func _select_existing_tower(tower: Tower, cell: Vector2i) -> void:
 	hud.show_tower_details(tower)
 	queue_redraw()
 
-## 切换当前选中的塔，并同步塔自身的选中态（仅选中塔绘制射程圈）
+## 切换当前选中的植物，并同步自身的选中态（仅选中植物绘制射程圈）
 func _set_selected_tower(tower: Tower) -> void:
 	if _selected_tower and is_instance_valid(_selected_tower) and _selected_tower != tower:
 		_selected_tower.set_selected(false)
@@ -222,15 +222,15 @@ func _set_selected_tower(tower: Tower) -> void:
 
 func _upgrade_selected_tower() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
-		hud.show_message("先点击选择一座塔")
+		hud.show_message("先点击选择一株植物")
 		return
 	if not _selected_tower.can_upgrade():
-		hud.show_message("这座塔已经满级")
+		hud.show_message("这株植物已经满级")
 		return
 
 	var cost := int(_selected_tower.get_upgrade_cost())
 	if not GameManager.spend_gold(cost):
-		hud.show_message("金币不足，升级需要 %d" % cost)
+		hud.show_message("阳光不足，升级需要 %d" % cost)
 		return
 
 	_selected_tower.upgrade()
@@ -240,7 +240,7 @@ func _upgrade_selected_tower() -> void:
 
 func _cycle_selected_tower_priority() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
-		hud.show_message("先点击选择一座塔")
+		hud.show_message("先点击选择一株植物")
 		return
 	_selected_tower.cycle_target_priority()
 	hud.show_tower_details(_selected_tower)
@@ -248,7 +248,7 @@ func _cycle_selected_tower_priority() -> void:
 
 func _sell_selected_tower() -> void:
 	if not _selected_tower or not is_instance_valid(_selected_tower):
-		hud.show_message("先点击选择一座塔")
+		hud.show_message("先点击选择一株植物")
 		return
 
 	var refund := int(_selected_tower.get_sell_value())
@@ -259,7 +259,7 @@ func _sell_selected_tower() -> void:
 	_selected_tower = null
 	_selected_cell = Vector2i(-1, -1)
 	hud.show_tower_details(null)
-	hud.show_message("出售成功，返还 %d 金币" % refund)
+	hud.show_message("铲除成功，返还 %d 阳光" % refund)
 	queue_redraw()
 
 func _start_game() -> void:
@@ -298,7 +298,7 @@ func _on_tutorial_tower_built() -> void:
 	if not _tutorial_active or _tutorial_first_tower_built:
 		return
 	_tutorial_first_tower_built = true
-	hud.show_message("很好。可以再补一座塔，或点击顶部“开始”迎战第一波", true)
+	hud.show_message("很好。可以再补一株植物，或点击顶部“开始”迎战第一波", true)
 	queue_redraw()
 
 func _toggle_pause() -> void:
@@ -314,7 +314,7 @@ func _toggle_pause() -> void:
 ## ---- 地图绘制 ----
 
 func _draw() -> void:
-	# 地图整体下移，避免与顶部信息栏重叠（塔/敌人/路径点已在 GameManager 中带上同样偏移）
+	# 地图整体下移，避免与顶部信息栏重叠（植物/僵尸/路径点已在 GameManager 中带上同样偏移）
 	draw_set_transform(Vector2(0, GameManager.MAP_OFFSET_Y))
 	_draw_background()
 	_draw_buildable_cells()
@@ -566,7 +566,7 @@ func _on_life_lost(_new_lives: int) -> void:
 	var effect := _hit_effect_scene.instantiate() as HitEffect
 	effects_container.add_child(effect)
 	effect.setup(GameManager.path_points[GameManager.path_points.size() - 1], Color(1.0, 0.15, 0.12), 42.0)
-	hud.show_message("敌人突破防线，生命 -1")
+	hud.show_message("僵尸突破防线，生命 -1")
 
 func _on_all_waves_completed() -> void:
 	# 胜利！

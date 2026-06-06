@@ -1,5 +1,5 @@
 ## HUD 界面脚本
-## 显示金币、生命、波次信息，处理塔选择
+## 显示阳光、生命、波次信息，处理植物选择
 class_name GameHUD
 extends CanvasLayer
 
@@ -115,7 +115,7 @@ func _make_gameplay_hud_click_through(node: Node) -> void:
 ## ---- 更新方法 ----
 
 func _update_all() -> void:
-	gold_label.text = "金币: %d" % GameManager.gold
+	gold_label.text = "阳光: %d" % GameManager.gold
 	lives_label.text = "生命: %d" % GameManager.lives
 	_update_wave_text(0)
 	_update_wave_preview(1, "下一波")
@@ -124,10 +124,10 @@ func _update_all() -> void:
 	_update_selected_tower_text()
 	_update_speed_button(GameManager.get_game_speed())
 	set_start_wave_available(true)
-	message_label.text = "点击按钮或 1/2/3 选塔，左键建造或选中塔，可升级/出售，T 切目标，F 快进"
+	message_label.text = "点击按钮或 1/2/3 选植物，左键种植或选中植物，可升级/铲除，T 切目标，F 快进"
 
 func _on_gold_changed(new_gold: int) -> void:
-	gold_label.text = "金币: %d" % new_gold
+	gold_label.text = "阳光: %d" % new_gold
 	_update_tower_buttons()
 	_update_action_buttons()
 
@@ -185,7 +185,7 @@ func _update_wave_preview(wave_num: int, prefix: String) -> void:
 	wave_preview_label.text = GameManager.get_wave_preview_text(wave_num, prefix)
 
 func _update_enemy_legend() -> void:
-	enemy_legend_label.text = "敌人：绿色普通 | 黄色快速 | 灰色重甲"
+	enemy_legend_label.text = "僵尸：普通 | 疾跑 | 铁桶"
 
 func _update_selected_tower_text() -> void:
 	_selected_tower_for_actions = null
@@ -219,9 +219,9 @@ func show_tower_details(tower: Tower) -> void:
 	_selected_tower_for_actions = tower
 	var upgrade_text := "满级"
 	if tower.can_upgrade():
-		upgrade_text = "升级: %d 金币" % tower.get_upgrade_cost()
+		upgrade_text = "升级: %d 阳光" % tower.get_upgrade_cost()
 
-	info_label.text = "选中: %s | %s | 目标: %s | 出售: %d 金币" % [
+	info_label.text = "选中: %s | %s | 目标: %s | 铲除返还: %d 阳光" % [
 		tower.get_display_name(),
 		tower.get_stats_text() + " | " + upgrade_text,
 		tower.get_target_priority_label(),
@@ -236,7 +236,7 @@ func _update_action_buttons() -> void:
 		priority_button.disabled = true
 		upgrade_button.text = "升级"
 		upgrade_button.disabled = true
-		sell_button.text = "出售"
+		sell_button.text = "铲除"
 		sell_button.disabled = true
 		return
 
@@ -247,7 +247,7 @@ func _update_action_buttons() -> void:
 	var upgrade_cost := _selected_tower_for_actions.get_upgrade_cost()
 	upgrade_button.text = "升级 %d" % upgrade_cost if can_upgrade else "已满级"
 	upgrade_button.disabled = not can_upgrade or not GameManager.can_afford(upgrade_cost)
-	sell_button.text = "出售 %d" % _selected_tower_for_actions.get_sell_value()
+	sell_button.text = "铲除 %d" % _selected_tower_for_actions.get_sell_value()
 	sell_button.disabled = false
 
 func set_start_wave_available(available: bool) -> void:
@@ -309,7 +309,7 @@ func show_result_screen(won: bool) -> void:
 	set_pause_button_paused(false)
 	result_title.text = "胜利" if won else "失败"
 	next_level_button.visible = won and GameManager.has_next_level()
-	result_stats.text = "关卡: %s\n到达波次: %d\n击杀敌人: %d\n漏掉敌人: %d\n剩余生命: %d\n剩余金币: %d" % [
+	result_stats.text = "关卡: %s\n到达波次: %d\n击退僵尸: %d\n漏掉僵尸: %d\n剩余生命: %d\n剩余阳光: %d" % [
 		GameManager.get_current_level_name(),
 		GameManager.current_wave,
 		GameManager.enemies_killed,
@@ -401,7 +401,7 @@ func _update_level_select_text() -> void:
 		"" if unlocked else "（未解锁）",
 	]
 	var lock_hint := "" if unlocked else "\n通关上一关后解锁"
-	level_select_description.text = "%s\n初始金币: %d | 初始生命: %d | 波次: %d%s" % [
+	level_select_description.text = "%s\n初始阳光: %d | 初始生命: %d | 波次: %d%s" % [
 		String(level.get("description", "")),
 		int(level.get("starting_gold", 0)),
 		int(level.get("starting_lives", 0)),
