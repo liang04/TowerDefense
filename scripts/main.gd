@@ -361,6 +361,7 @@ func _draw() -> void:
 	_draw_grid()
 	_draw_path()
 	_draw_hover()
+	_draw_selected_cell()
 
 func _draw_background() -> void:
 	var map_size := Vector2(GameManager.GRID_COLS * GameManager.CELL_SIZE, GameManager.GRID_ROWS * GameManager.CELL_SIZE)
@@ -564,41 +565,46 @@ func _draw_goal_marker(end_point: Vector2) -> void:
 	draw_rect(Rect2(end_point + Vector2(-7, -3), Vector2(14, 21)), Color(0.12, 0.04, 0.04, 0.85))
 	draw_arc(end_point, 28.0, 0.0, TAU, 32, Color(1.0, 0.38, 0.25, 0.75), 3.0)
 
+## 鼠标悬停高亮：仅在地图格子范围内显示，避免鼠标移到顶部/底部 UI 区域时出现红色提示框
 func _draw_hover() -> void:
-	# 鼠标悬停高亮：仅在地图格子范围内显示，避免鼠标移到顶部/底部 UI 区域时出现红色提示框
 	var in_bounds := _hover_cell.x >= 0 and _hover_cell.y >= 0 \
 		and _hover_cell.x < GameManager.GRID_COLS and _hover_cell.y < GameManager.GRID_ROWS
-	if in_bounds:
-		var can_place := GameManager.can_place_tower(_hover_cell.x, _hover_cell.y)
-		var can_afford := GameManager.gold >= GameManager.get_tower_cost(GameManager.selected_tower_type)
-		var color := Color(0.2, 0.9, 0.2, 0.3) if can_place and can_afford else Color(0.9, 0.2, 0.2, 0.3)
+	if not in_bounds:
+		return
 
-		var rect := Rect2(
-			_hover_cell.x * GameManager.CELL_SIZE,
-			_hover_cell.y * GameManager.CELL_SIZE,
-			GameManager.CELL_SIZE,
-			GameManager.CELL_SIZE
+	var can_place := GameManager.can_place_tower(_hover_cell.x, _hover_cell.y)
+	var can_afford := GameManager.gold >= GameManager.get_tower_cost(GameManager.selected_tower_type)
+	var color := Color(0.2, 0.9, 0.2, 0.3) if can_place and can_afford else Color(0.9, 0.2, 0.2, 0.3)
+
+	var rect := Rect2(
+		_hover_cell.x * GameManager.CELL_SIZE,
+		_hover_cell.y * GameManager.CELL_SIZE,
+		GameManager.CELL_SIZE,
+		GameManager.CELL_SIZE
+	)
+	draw_rect(rect, color)
+
+	# 种植前射程预览：悬停可种植格子时，画出所选植物的攻击范围圈
+	if can_place:
+		var center := Vector2(
+			_hover_cell.x * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5,
+			_hover_cell.y * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5
 		)
-		draw_rect(rect, color)
+		var preview_range := float(GameManager.get_tower_config(GameManager.selected_tower_type)["range"])
+		draw_circle(center, preview_range, Color(0.4, 0.8, 1.0, 0.07))
+		draw_arc(center, preview_range, 0, TAU, 48, Color(0.45, 0.8, 1.0, 0.55), 1.5)
 
-		# 种植前射程预览：悬停可种植格子时，画出所选植物的攻击范围圈
-		if can_place:
-			var center := Vector2(
-				_hover_cell.x * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5,
-				_hover_cell.y * GameManager.CELL_SIZE + GameManager.CELL_SIZE * 0.5
-			)
-			var preview_range := float(GameManager.get_tower_config(GameManager.selected_tower_type)["range"])
-			draw_circle(center, preview_range, Color(0.4, 0.8, 1.0, 0.07))
-			draw_arc(center, preview_range, 0, TAU, 48, Color(0.45, 0.8, 1.0, 0.55), 1.5)
-
-	if _selected_cell.x >= 0:
-		var selected_rect := Rect2(
-			_selected_cell.x * GameManager.CELL_SIZE + 3,
-			_selected_cell.y * GameManager.CELL_SIZE + 3,
-			GameManager.CELL_SIZE - 6,
-			GameManager.CELL_SIZE - 6
-		)
-		draw_rect(selected_rect, Color(1.0, 0.95, 0.35, 0.9), false, 3.0)
+## 已选中格子的黄色描边（与悬停高亮相互独立，可同时出现）
+func _draw_selected_cell() -> void:
+	if _selected_cell.x < 0:
+		return
+	var selected_rect := Rect2(
+		_selected_cell.x * GameManager.CELL_SIZE + 3,
+		_selected_cell.y * GameManager.CELL_SIZE + 3,
+		GameManager.CELL_SIZE - 6,
+		GameManager.CELL_SIZE - 6
+	)
+	draw_rect(selected_rect, Color(1.0, 0.95, 0.35, 0.9), false, 3.0)
 
 ## ---- 游戏结束 ----
 
