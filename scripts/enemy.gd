@@ -36,6 +36,7 @@ var _use_sprite: bool = false
 ## ---- 生命周期 ----
 func _ready() -> void:
 	add_to_group("enemies")
+	_setup_hitbox()
 	_waypoints = GameManager.path_points
 	if _waypoints.size() > 0:
 		global_position = _waypoints[0]
@@ -48,6 +49,23 @@ func _ready() -> void:
 	_setup_sprite()
 	if is_boss:
 		GameManager.notify_boss_incoming()
+
+## 挂一个可被监测的 Area2D，供塔的范围检测使用（自身不监测任何东西）。
+## 半径取得比体型略大，确保塔的候选集是真实射程内敌人的超集，
+## 精确的射程门槛仍由 Tower._select_target() 的距离判断兜底。
+func _setup_hitbox() -> void:
+	var hitbox := Area2D.new()
+	hitbox.monitoring = false
+	hitbox.monitorable = true
+	hitbox.collision_layer = 0
+	hitbox.collision_mask = 0
+	hitbox.set_collision_layer_value(GameManager.ENEMY_PHYSICS_LAYER, true)
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 16.0
+	shape.shape = circle
+	hitbox.add_child(shape)
+	add_child(hitbox)
 
 ## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
 func _setup_sprite() -> void:

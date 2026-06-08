@@ -28,6 +28,10 @@ const GRID_COLS := 12       # 地图列数（宽）
 const GRID_ROWS := 8        # 地图行数（高）
 const MAP_OFFSET_Y := 48    # 地图整体下移的像素，给顶部信息栏留出空间
 
+## 敌人占用的物理碰撞层（1-based 层号）：敌人挂可被监测的 Area2D，
+## 塔用半径=射程的 Area2D 监测该层，避免每次选目标都全量遍历敌人组
+const ENEMY_PHYSICS_LAYER := 2
+
 ## 塔的等级缩放参数（塔实体与 HUD 显示共用，避免公式重复）
 const LEVEL_DAMAGE_SCALE_PER_LEVEL := 0.45   # 每级伤害加成比例
 const LEVEL_RANGE_BONUS_PER_LEVEL := 14.0    # 每级射程加成（像素）

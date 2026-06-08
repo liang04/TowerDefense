@@ -15,6 +15,23 @@ var _last_target_position: Vector2 = Vector2.ZERO
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
 var _effects_container: Node = null
+# 用 Node 弱类型而非 ProjectilePool，避免与池脚本形成 class_name 循环依赖
+var _pool: Node = null
+
+## 由对象池在创建时注入自身引用，命中后据此回收
+func set_pool(pool: Node) -> void:
+	_pool = pool
+
+## 从池中取出复用时调用：恢复显示与逐帧处理
+func activate() -> void:
+	visible = true
+	set_process(true)
+
+## 命中后回收时调用：停止显示与处理，清空目标引用
+func deactivate() -> void:
+	visible = false
+	set_process(false)
+	_target = null
 
 func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value: float, slow_time: float, color_value: Color, splash_value: float = 0.0, burn_dps_value: float = 0.0, burn_duration_value: float = 0.0) -> void:
 	global_position = start_position
@@ -53,7 +70,11 @@ func _hit() -> void:
 		GameManager.request_sfx("hit")
 
 	_spawn_hit_effect()
-	queue_free()
+	# 回收进对象池而非销毁；无池时（理论上不会发生）回退到 queue_free
+	if _pool:
+		_pool.release(self)
+	else:
+		queue_free()
 
 ## 命中点半径内的所有敌人都受到伤害（及减速，若有）
 func _apply_splash_damage() -> void:

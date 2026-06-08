@@ -3,7 +3,6 @@
 class_name Tower
 extends Node2D
 
-var _projectile_scene: PackedScene = preload("res://scenes/projectile.tscn")
 var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
 
 const TOWER_ART_PATHS := {
@@ -52,12 +51,31 @@ var _projectiles_container: Node = null
 var target_priority: String = "progress"
 var _anim: AnimatedSprite2D = null
 var _use_sprite: bool = false
+var _range_area: Area2D = null
+var _range_shape: CircleShape2D = null
 
 ## ---- 生命周期 ----
 func _ready() -> void:
 	_apply_config()
+	_setup_range_area()
 	add_child(SpriteLibrary.make_shadow(20.0, 8.0, 22.0))
 	_setup_sprite()
+
+## 半径=射程的范围检测区，只监测敌人层。选目标时读取其重叠列表，
+## 由物理服务器维护，开销与"范围内敌人数"成正比，而非全体敌人数。
+func _setup_range_area() -> void:
+	_range_area = Area2D.new()
+	_range_area.monitoring = true
+	_range_area.monitorable = false
+	_range_area.collision_layer = 0
+	_range_area.collision_mask = 0
+	_range_area.set_collision_mask_value(GameManager.ENEMY_PHYSICS_LAYER, true)
+	_range_shape = CircleShape2D.new()
+	_range_shape.radius = attack_range
+	var shape := CollisionShape2D.new()
+	shape.shape = _range_shape
+	_range_area.add_child(shape)
+	add_child(_range_area)
 
 ## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
 func _setup_sprite() -> void:
@@ -122,13 +140,14 @@ func _select_target() -> void:
 	var best_score: float = -INF
 	var best_distance: float = INF
 
-	for node in get_tree().get_nodes_in_group("enemies"):
-		if not (node is Enemy):
+	# 只遍历范围检测区内的敌人（物理服务器维护的重叠列表），而非全体敌人组
+	for area in _range_area.get_overlapping_areas():
+		var enemy := area.get_parent() as Enemy
+		if enemy == null:
 			continue
 
-		var enemy := node as Enemy
 		var distance := global_position.distance_to(enemy.global_position)
-		if distance > attack_range:
+		if distance > attack_range:   # hitbox 半径略大于体型，这里精确兜底
 			continue
 
 		# 同分时一律取更近的目标作为决胜
@@ -166,14 +185,13 @@ func _attack(target: Enemy) -> void:
 	if not is_instance_valid(target):
 		return
 
-	var projectiles_container := _get_projectiles_container()
-	if projectiles_container == null:
+	var pool := _get_projectiles_container() as ProjectilePool
+	if pool == null:
 		return
 
-	var projectile := _projectile_scene.instantiate() as Projectile
-	projectiles_container.add_child(projectile)
+	var projectile := pool.acquire()
 	projectile.setup(global_position, target, attack_damage, slow_multiplier, slow_duration, body_color, splash_radius, burn_dps, burn_duration)
-	_spawn_muzzle_flash(projectiles_container, target)
+	_spawn_muzzle_flash(pool, target)
 	GameManager.request_sfx("shoot")
 	_shot_flash_timer = 0.12
 
@@ -268,6 +286,10 @@ func _apply_config() -> void:
 	var color_value = config["color"]
 	if color_value is Color:
 		body_color = color_value
+
+	# 升级会改变射程，同步范围检测区半径（_ready 首次调用时 area 尚未创建）
+	if _range_shape:
+		_range_shape.radius = attack_range
 
 	queue_redraw()
 
