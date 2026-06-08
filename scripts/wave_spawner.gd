@@ -8,9 +8,6 @@ signal all_waves_completed
 
 const COUNTDOWN_SECONDS := 2
 
-## ---- 预加载 ----
-var _enemy_scene: PackedScene = preload("res://scenes/enemy.tscn")
-
 ## ---- 状态机 ----
 ## 这些状态互斥，用单一 _state 表示，避免多个布尔标志出现非法组合
 ## （如同时"正在生成"又"等待生成"）。
@@ -94,15 +91,16 @@ func _spawn_enemy() -> void:
 		return
 
 	var wave_data := _get_current_spawn_data()
-	var enemy := _enemy_scene.instantiate() as Enemy
+	var data := GameManager.get_scaled_enemy_data(wave_data)
+	var enemy := (enemies_container as EnemyPool).acquire(String(data.get("type", "grunt")))
 
-	enemy.setup(GameManager.get_scaled_enemy_data(wave_data))
+	# died 替代 tree_exited 作为存活统计依据（池化后敌人不再 free）；
+	# 实例复用，用 is_connected 守卫确保只连一次，避免重复计数
+	if not enemy.died.is_connected(_on_enemy_died):
+		enemy.died.connect(_on_enemy_died)
 
-	enemies_container.add_child(enemy)
+	enemy.spawn(data)
 	_enemies_alive += 1
-
-	# 监听敌人销毁
-	enemy.tree_exited.connect(_on_enemy_died)
 
 func _get_current_spawn_data() -> Dictionary:
 	var waves := GameManager.get_current_level_waves()

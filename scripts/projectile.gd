@@ -11,6 +11,7 @@ var burn_duration: float = 0.0
 var projectile_color: Color = Color(1.0, 0.85, 0.25)
 
 var _target: Enemy = null
+var _target_spawn_id: int = 0   # 锁定目标出场序号；目标若被回收复用为新敌人则序号不符，视作目标已失
 var _last_target_position: Vector2 = Vector2.ZERO
 var _hit_effect_scene: PackedScene = preload("res://scenes/hit_effect.tscn")
 var _particle_burst_scene: PackedScene = preload("res://scenes/particle_burst.tscn")
@@ -45,10 +46,15 @@ func setup(start_position: Vector2, target: Enemy, damage_value: int, slow_value
 	burn_duration = burn_duration_value
 	if is_instance_valid(_target):
 		_last_target_position = _target.global_position
+		_target_spawn_id = _target.spawn_id
 	queue_redraw()
 
+## 目标是否仍是当初锁定的那一只（实例有效且未被回收复用为新一次出场）
+func _target_valid() -> bool:
+	return is_instance_valid(_target) and _target.spawn_id == _target_spawn_id
+
 func _process(delta: float) -> void:
-	if is_instance_valid(_target):
+	if _target_valid():
 		_last_target_position = _target.global_position
 
 	var to_target := _last_target_position - global_position
@@ -65,7 +71,7 @@ func _process(delta: float) -> void:
 func _hit() -> void:
 	if splash_radius > 0.0:
 		_apply_splash_damage()
-	elif is_instance_valid(_target):
+	elif _target_valid():
 		_damage_enemy(_target)
 		GameManager.request_sfx("hit")
 

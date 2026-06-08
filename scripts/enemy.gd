@@ -3,6 +3,9 @@
 class_name Enemy
 extends Node2D
 
+## 死亡或到达终点时发出（替代 tree_exited 作为存活统计依据，因池化后不再 free）
+signal died
+
 const ENEMY_ART_PATHS := {
 	"grunt": "res://assets/enemies/grunt.svg",
 	"runner": "res://assets/enemies/runner.svg",
@@ -32,23 +35,62 @@ var _burn_dps: float = 0.0         # 灼烧每秒伤害
 var _burn_accum: float = 0.0       # 不足 1 点的灼烧伤害累积
 var _anim: AnimatedSprite2D = null
 var _use_sprite: bool = false
+var _pool: Node = null          # 所属对象池（弱类型避免与 EnemyPool 形成 class_name 循环）
+var _hitbox: Area2D = null
+var _alive: bool = false         # 出场中标志：防止已死敌人被重复结算/回收
+var spawn_id: int = 0            # 每次出场自增，供子弹识别"是否同一次出场的同一敌人"
 
 ## ---- 生命周期 ----
+## _ready 只做与类型绑定的一次性构建（精灵/阴影/碰撞盒）；池化实例类型固定。
+## 每次出场的动态状态、定位、入组、激活由 spawn() 负责。
 func _ready() -> void:
-	add_to_group("enemies")
 	_setup_hitbox()
-	_waypoints = GameManager.path_points
-	if _waypoints.size() > 0:
-		global_position = _waypoints[0]
-		_current_wp_index = 1
-	var is_boss := enemy_type == "boss"
-	if is_boss:
+	if enemy_type == "boss":
 		add_child(SpriteLibrary.make_shadow(26.0, 10.0, 24.0))
 	else:
 		add_child(SpriteLibrary.make_shadow(15.0, 6.0, 16.0))
 	_setup_sprite()
-	if is_boss:
+
+func set_pool(pool: Node) -> void:
+	_pool = pool
+
+## 每次出场（新建或池中复用）：写入数据、重置动态状态、定位到起点并激活
+func spawn(data: Dictionary) -> void:
+	setup(data)
+	spawn_id += 1
+	_alive = true
+	_reset_dynamic_state()
+	_waypoints = GameManager.path_points
+	if _waypoints.size() > 0:
+		global_position = _waypoints[0]
+		_current_wp_index = 1
+	else:
+		_current_wp_index = 0
+	add_to_group("enemies")
+	_set_hitbox_enabled(true)
+	visible = true
+	set_process(true)
+	if _use_sprite:
+		_anim.play(SpriteLibrary.ANIM_NAME)
+	queue_redraw()
+	if enemy_type == "boss":
 		GameManager.notify_boss_incoming()
+
+## 复位所有逐帧/受击产生的临时状态，避免复用时残留上一条命的减速/灼烧/缩放
+func _reset_dynamic_state() -> void:
+	hp = max_hp
+	_slow_timer = 0.0
+	_slow_multiplier = 1.0
+	_hit_flash_timer = 0.0
+	_burn_timer = 0.0
+	_burn_dps = 0.0
+	_burn_accum = 0.0
+	if _hit_punch_tween and _hit_punch_tween.is_valid():
+		_hit_punch_tween.kill()
+	scale = Vector2.ONE
+	if _use_sprite:
+		_anim.modulate = Color.WHITE
+		_anim.flip_h = false
 
 ## 挂一个可被监测的 Area2D，供塔的范围检测使用（自身不监测任何东西）。
 ## 半径取得比体型略大，确保塔的候选集是真实射程内敌人的超集，
@@ -66,6 +108,12 @@ func _setup_hitbox() -> void:
 	shape.shape = circle
 	hitbox.add_child(shape)
 	add_child(hitbox)
+	_hitbox = hitbox
+
+## 启停 hitbox 的可被监测性：回收（死亡）后置 false，使塔的范围检测忽略已死敌人
+func _set_hitbox_enabled(enabled: bool) -> void:
+	if _hitbox:
+		_hitbox.set_deferred("monitorable", enabled)
 
 ## 若存在对应 PNG 帧则用 AnimatedSprite2D 渲染，否则回退到 _draw()
 func _setup_sprite() -> void:
@@ -236,16 +284,38 @@ func _get_enemy_art_texture() -> Texture2D:
 
 ## ---- 内部方法 ----
 
-## 被击杀
+## 被击杀（_alive 守卫：同一帧多枚子弹/灼烧可能重复触发，只结算一次）
 func _on_killed() -> void:
+	if not _alive:
+		return
+	_alive = false
 	GameManager.notify_enemy_killed(global_position, reward, body_color)
 	GameManager.add_gold(reward)
-	queue_free()
+	_recycle()
 
 ## 到达终点
 func _on_reached_end() -> void:
+	if not _alive:
+		return
+	_alive = false
 	GameManager.lose_life(1)
-	queue_free()
+	_recycle()
+
+## 死亡/到达终点后回收：发出 died（供波次统计），停用并交还对象池；无池时回退销毁
+func _recycle() -> void:
+	died.emit()
+	if _pool == null:
+		queue_free()
+		return
+	remove_from_group("enemies")
+	_set_hitbox_enabled(false)
+	if _hit_punch_tween and _hit_punch_tween.is_valid():
+		_hit_punch_tween.kill()
+	if _use_sprite:
+		_anim.pause()
+	visible = false
+	set_process(false)
+	_pool.release(self)
 
 ## ---- 绘制美术资源、状态和血条 ----
 func _draw() -> void:
