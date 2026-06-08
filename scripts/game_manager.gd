@@ -32,12 +32,6 @@ const MAP_OFFSET_Y := 48    # 地图整体下移的像素，给顶部信息栏�
 ## 塔用半径=射程的 Area2D 监测该层，避免每次选目标都全量遍历敌人组
 const ENEMY_PHYSICS_LAYER := 2
 
-## 塔的等级缩放参数（塔实体与 HUD 显示共用，避免公式重复）
-const LEVEL_DAMAGE_SCALE_PER_LEVEL := 0.45   # 每级伤害加成比例
-const LEVEL_RANGE_BONUS_PER_LEVEL := 14.0    # 每级射程加成（像素）
-const LEVEL_COOLDOWN_SCALE_PER_LEVEL := 0.12 # 每级冷却缩减比例
-const MIN_COOLDOWN := 0.18                    # 冷却时间下限（秒）
-
 ## 可选的游戏速度倍率（快进），按顺序循环切换
 const GAME_SPEEDS: Array[float] = [1.0, 2.0, 3.0]
 
@@ -47,11 +41,6 @@ const DIFFICULTIES: Array[Dictionary] = [
 	{"name": "普通", "hp_mult": 1.0, "speed_mult": 1.0, "reward_mult": 1.0, "gold_mult": 1.0, "lives_mult": 1.0},
 	{"name": "困难", "hp_mult": 1.4, "speed_mult": 1.1, "reward_mult": 0.9, "gold_mult": 0.85, "lives_mult": 0.65},
 ]
-
-## 进度存档路径（用户数据目录，跨会话持久化）
-const SAVE_PATH := "user://savegame.cfg"
-## 设置存档路径（音量/静音/游戏速度，独立于进度存档）
-const SETTINGS_PATH := "user://settings.cfg"
 
 ## 自定义界面字体目录与候选文件名（放入即生效；默认字体在无 CJK 系统字体的
 ## 机器上会把中文显示成方框，打包一个字体可彻底规避）
@@ -76,58 +65,9 @@ const ENEMY_TYPE_ADVICE := {
 	"frostproof": "豌豆射手",
 }
 
-var tower_configs: Dictionary = {
-	"arrow": {
-		"name": "豌豆射手",
-		"cost": 45,
-		"damage": 9,
-		"range": 170.0,
-		"cooldown": 0.65,
-		"slow_multiplier": 1.0,
-		"slow_duration": 0.0,
-		"splash_radius": 0.0,
-		"color": Color(0.32, 0.72, 0.28),
-		"description": "基础输出，便宜，射速快",
-	},
-	"cannon": {
-		"name": "爆裂果",
-		"cost": 75,
-		"damage": 24,
-		"range": 145.0,
-		"cooldown": 1.5,
-		"slow_multiplier": 1.0,
-		"slow_duration": 0.0,
-		"splash_radius": 72.0,
-		"color": Color(0.92, 0.42, 0.18),
-		"description": "高伤害，射速慢，范围溅射",
-	},
-	"frost": {
-		"name": "寒冰花",
-		"cost": 60,
-		"damage": 5,
-		"range": 155.0,
-		"cooldown": 0.9,
-		"slow_multiplier": 0.55,
-		"slow_duration": 1.8,
-		"splash_radius": 0.0,
-		"color": Color(0.35, 0.82, 0.95),
-		"description": "伤害低，可减速僵尸",
-	},
-	"pepper": {
-		"name": "火爆辣椒",
-		"cost": 65,
-		"damage": 4,
-		"range": 150.0,
-		"cooldown": 0.8,
-		"slow_multiplier": 1.0,
-		"slow_duration": 0.0,
-		"splash_radius": 0.0,
-		"burn_dps": 8.0,
-		"burn_duration": 2.5,
-		"color": Color(0.95, 0.45, 0.15),
-		"description": "直伤低，点燃后持续灼烧（克高血）",
-	},
-}
+## 植物配置与数值公式已分离到 TowerData（静态数据/纯函数）；存档 I/O 分离到 SaveSystem。
+## 本类专注运行时状态与事件协调，对外仍通过下方同名公共方法转发，API 不变。
+var _save := SaveSystem.new()
 
 ## ---- 状态 ----
 var levels: Array[Dictionary] = []
@@ -197,39 +137,29 @@ func is_level_unlocked(level_index: int) -> bool:
 
 ## 读取存档，恢复已解锁关卡与上次游玩关卡；无存档或损坏时回退默认进度
 func _load_progress() -> void:
-	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) != OK:
+	var data := _save.load_progress()
+	if data.is_empty():
 		return
 	var last_index := int(levels.size() - 1)
-	var saved_max := int(config.get_value("progress", "max_unlocked_level", 0))
-	var saved_last := int(config.get_value("progress", "last_level_index", 0))
-	max_unlocked_level = clampi(saved_max, 0, last_index)
-	current_level_index = clampi(saved_last, 0, max_unlocked_level)
+	max_unlocked_level = clampi(int(data["max_unlocked_level"]), 0, last_index)
+	current_level_index = clampi(int(data["last_level_index"]), 0, max_unlocked_level)
 
 func _save_progress() -> void:
-	var config := ConfigFile.new()
-	config.set_value("progress", "max_unlocked_level", max_unlocked_level)
-	config.set_value("progress", "last_level_index", current_level_index)
-	config.save(SAVE_PATH)
+	_save.save_progress(max_unlocked_level, current_level_index)
 
 ## ---- 设置存档（音量/静音/速度）----
 
 func _load_settings() -> void:
-	var config := ConfigFile.new()
-	if config.load(SETTINGS_PATH) != OK:
+	var data := _save.load_settings()
+	if data.is_empty():
 		return
-	game_speed_index = clampi(int(config.get_value("settings", "game_speed_index", 0)), 0, GAME_SPEEDS.size() - 1)
-	difficulty_index = clampi(int(config.get_value("settings", "difficulty_index", 1)), 0, DIFFICULTIES.size() - 1)
-	sound_volume = clampf(float(config.get_value("settings", "sound_volume", 1.0)), 0.0, 1.0)
-	is_muted = bool(config.get_value("settings", "muted", false))
+	game_speed_index = clampi(int(data["game_speed_index"]), 0, GAME_SPEEDS.size() - 1)
+	difficulty_index = clampi(int(data["difficulty_index"]), 0, DIFFICULTIES.size() - 1)
+	sound_volume = clampf(float(data["sound_volume"]), 0.0, 1.0)
+	is_muted = bool(data["muted"])
 
 func _save_settings() -> void:
-	var config := ConfigFile.new()
-	config.set_value("settings", "game_speed_index", game_speed_index)
-	config.set_value("settings", "difficulty_index", difficulty_index)
-	config.set_value("settings", "sound_volume", sound_volume)
-	config.set_value("settings", "muted", is_muted)
-	config.save(SETTINGS_PATH)
+	_save.save_settings(game_speed_index, difficulty_index, sound_volume, is_muted)
 
 ## 把音量/静音应用到主音频总线
 func _apply_audio_settings() -> void:
@@ -361,61 +291,25 @@ func spend_gold(amount: int) -> bool:
 	gold_changed.emit(gold)
 	return true
 
-## 有序的植物类型列表（供数据驱动的植物栏与热键使用）
+## 以下塔配置/数值方法转发到 TowerData（数据与公式的唯一来源），对外 API 保持不变
+
 func get_tower_types() -> Array:
-	return tower_configs.keys()
+	return TowerData.get_types()
 
 func get_tower_config(tower_type: String) -> Dictionary:
-	if tower_type in tower_configs:
-		return tower_configs[tower_type]
-	return tower_configs["arrow"]
+	return TowerData.get_config(tower_type)
 
 func get_tower_cost(tower_type: String) -> int:
-	return int(get_tower_config(tower_type)["cost"])
+	return TowerData.get_cost(tower_type)
 
-## 按等级缩放后的塔数值（伤害/射程/冷却/减速），塔实体与 HUD 共用此唯一公式
 func get_scaled_tower_stats(tower_type: String, tower_level: int = 1) -> Dictionary:
-	var config := get_tower_config(tower_type)
-	var level_offset := float(tower_level - 1)
-	var damage_scale := 1.0 + level_offset * LEVEL_DAMAGE_SCALE_PER_LEVEL
-	var cooldown_scale := 1.0 - level_offset * LEVEL_COOLDOWN_SCALE_PER_LEVEL
-	return {
-		"damage": int(round(float(config["damage"]) * damage_scale)),
-		"range": float(config["range"]) + level_offset * LEVEL_RANGE_BONUS_PER_LEVEL,
-		"cooldown": maxf(float(config["cooldown"]) * cooldown_scale, MIN_COOLDOWN),
-		"slow_multiplier": float(config["slow_multiplier"]),
-		"slow_duration": float(config["slow_duration"]),
-		"splash_radius": float(config.get("splash_radius", 0.0)),
-		"burn_dps": float(config.get("burn_dps", 0.0)) * damage_scale,
-		"burn_duration": float(config.get("burn_duration", 0.0)),
-	}
+	return TowerData.get_scaled_stats(tower_type, tower_level)
 
 func get_tower_stats_text(tower_type: String, tower_level: int = 1) -> String:
-	var stats := get_scaled_tower_stats(tower_type, tower_level)
-	var slow_multiplier := float(stats["slow_multiplier"])
-	var slow_duration := float(stats["slow_duration"])
-	var splash_radius := float(stats["splash_radius"])
-	var burn_dps := float(stats["burn_dps"])
-	var burn_duration := float(stats["burn_duration"])
-	var parts: Array[String] = [
-		"伤害 %d" % int(stats["damage"]),
-		"射程 %d" % int(round(float(stats["range"]))),
-		"间隔 %.2fs" % float(stats["cooldown"]),
-	]
-
-	if splash_radius > 0.0:
-		parts.append("溅射 R%d" % int(round(splash_radius)))
-
-	if burn_dps > 0.0 and burn_duration > 0.0:
-		parts.append("灼烧 %d/s × %.1fs" % [int(round(burn_dps)), burn_duration])
-
-	if slow_duration > 0.0 and slow_multiplier < 1.0:
-		parts.append("减速 %d%% %.1fs" % [int(round((1.0 - slow_multiplier) * 100.0)), slow_duration])
-
-	return " | ".join(parts)
+	return TowerData.get_stats_text(tower_type, tower_level)
 
 func set_selected_tower_type(tower_type: String) -> void:
-	if not (tower_type in tower_configs):
+	if not TowerData.has_type(tower_type):
 		return
 	selected_tower_type = tower_type
 	tower_selection_changed.emit(selected_tower_type)
