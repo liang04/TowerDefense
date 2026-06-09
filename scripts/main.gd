@@ -182,7 +182,9 @@ func _try_place_tower() -> void:
 		tower.global_position = GameManager.grid_to_pixel(col, row)
 		towers_container.add_child(tower)
 		GameManager.register_tower(col, row, tower)
-		_select_existing_tower(tower, Vector2i(col, row))
+		_set_selected_tower(null)
+		_selected_cell = Vector2i(-1, -1)
+		hud.show_tower_details(null)
 		_on_tutorial_tower_built()
 		queue_redraw()
 	else:

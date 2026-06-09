@@ -48,6 +48,7 @@ const MESSAGE_TIME := 3.0
 
 var _pending_level_index: int = 0
 var _tower_buttons: Dictionary = {}
+var _tower_icon_textures: Dictionary = {}
 var _selected_tower_for_actions: Tower = null
 
 ## 主场景（HUD 的父节点），用于回调游戏流程方法
@@ -128,12 +129,84 @@ func flash_damage() -> void:
 ## 按 GameManager.tower_configs 动态生成植物按钮（加植物只需改数据，无需改场景）
 func _build_plant_buttons() -> void:
 	_tower_buttons = {}
+	var tower_index := 0
 	for tower_type in GameManager.get_tower_types():
 		var button := Button.new()
 		button.focus_mode = Control.FOCUS_NONE
+		button.custom_minimum_size = Vector2(78, 72)
+		button.text = ""
+		button.tooltip_text = String(GameManager.get_tower_config(tower_type)["name"])
 		button.pressed.connect(_on_tower_button_pressed.bind(tower_type))
+
+		var content := VBoxContainer.new()
+		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.set_anchors_preset(Control.PRESET_FULL_RECT)
+		content.offset_left = 4
+		content.offset_top = 3
+		content.offset_right = -4
+		content.offset_bottom = -3
+		content.alignment = BoxContainer.ALIGNMENT_CENTER
+		button.add_child(content)
+
+		var icon := TextureRect.new()
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.custom_minimum_size = Vector2(46, 46)
+		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = _get_tower_icon_texture(tower_type)
+		content.add_child(icon)
+
+		var label := Label.new()
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 12)
+		content.add_child(label)
+
 		plant_bar.add_child(button)
-		_tower_buttons[tower_type] = button
+		_tower_buttons[tower_type] = {
+			"button": button,
+			"icon": icon,
+			"label": label,
+			"index": tower_index,
+		}
+		tower_index += 1
+
+func _get_tower_icon_texture(tower_type: String) -> Texture2D:
+	if _tower_icon_textures.has(tower_type):
+		return _tower_icon_textures[tower_type]
+
+	var path := "res://assets/sprites/towers/%s_0.png" % tower_type
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
+		_tower_icon_textures[tower_type] = null
+		return null
+
+	var image := Image.new()
+	if image.load_png_from_buffer(bytes) != OK:
+		_tower_icon_textures[tower_type] = null
+		return null
+
+	var texture := ImageTexture.create_from_image(image)
+	_tower_icon_textures[tower_type] = texture
+	return texture
+
+func _make_tower_button_style(is_selected: bool, is_disabled: bool = false) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.set_corner_radius_all(6)
+	style.set_content_margin_all(4)
+	if is_selected:
+		style.bg_color = Color(0.26, 0.22, 0.08, 0.96)
+		style.border_color = Color(1.0, 0.86, 0.25, 1.0)
+		style.set_border_width_all(3)
+	elif is_disabled:
+		style.bg_color = Color(0.08, 0.08, 0.08, 0.55)
+		style.border_color = Color(0.25, 0.25, 0.25, 0.75)
+		style.set_border_width_all(1)
+	else:
+		style.bg_color = Color(0.08, 0.11, 0.09, 0.82)
+		style.border_color = Color(0.35, 0.45, 0.35, 0.8)
+		style.set_border_width_all(1)
+	return style
 
 func _make_gameplay_hud_click_through(node: Node) -> void:
 	if node is Control:
@@ -225,12 +298,8 @@ func _update_enemy_legend() -> void:
 
 func _update_selected_tower_text() -> void:
 	_selected_tower_for_actions = null
-	var config := GameManager.get_tower_config(GameManager.selected_tower_type)
-	info_label.text = "当前: %s | 费用: %d | %s" % [
-		String(config["name"]),
-		GameManager.get_tower_cost(GameManager.selected_tower_type),
-		GameManager.get_tower_stats_text(GameManager.selected_tower_type),
-	]
+	info_label.text = ""
+	info_label.visible = false
 	_update_tower_buttons()
 	_update_action_buttons()
 
@@ -239,13 +308,29 @@ func _update_tower_buttons() -> void:
 		return
 
 	for tower_type in _tower_buttons.keys():
-		var button: Button = _tower_buttons[tower_type]
+		var entry: Dictionary = _tower_buttons[tower_type]
+		var button: Button = entry["button"]
+		var icon: TextureRect = entry["icon"]
+		var label: Label = entry["label"]
 		var config := GameManager.get_tower_config(tower_type)
 		var cost := GameManager.get_tower_cost(tower_type)
 		var is_selected: bool = tower_type == GameManager.selected_tower_type
-		var prefix := "✓ " if is_selected else ""
-		button.text = "%s%s %d" % [prefix, String(config["name"]), cost]
+		var hotkey := int(entry["index"]) + 1
+		label.text = "%d  %d" % [hotkey, cost]
+		button.tooltip_text = "%s | %d | %s" % [
+			String(config["name"]),
+			cost,
+			GameManager.get_tower_stats_text(tower_type),
+		]
 		button.disabled = not is_selected and not GameManager.can_afford(cost)
+		button.add_theme_stylebox_override("normal", _make_tower_button_style(is_selected))
+		button.add_theme_stylebox_override("hover", _make_tower_button_style(is_selected))
+		button.add_theme_stylebox_override("pressed", _make_tower_button_style(true))
+		button.add_theme_stylebox_override("focus", _make_tower_button_style(is_selected))
+		button.add_theme_stylebox_override("disabled", _make_tower_button_style(is_selected, true))
+		button.modulate = Color(1.08, 1.08, 1.08) if is_selected else Color.WHITE
+		icon.modulate = Color.WHITE if not button.disabled else Color(0.55, 0.55, 0.55, 0.75)
+		label.modulate = Color(1.0, 0.95, 0.35) if is_selected else Color.WHITE
 
 func show_tower_details(tower: Tower) -> void:
 	if not tower or not is_instance_valid(tower):
@@ -253,6 +338,7 @@ func show_tower_details(tower: Tower) -> void:
 		return
 
 	_selected_tower_for_actions = tower
+	info_label.visible = true
 	var upgrade_text := "满级"
 	if tower.can_upgrade():
 		upgrade_text = "升级: %d 阳光" % tower.get_upgrade_cost()
