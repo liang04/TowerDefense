@@ -178,7 +178,7 @@ func _process(delta: float) -> void:
 ## 精灵模式下：按行进方向水平翻转，受击时整体提亮
 func _update_sprite_visual(direction: Vector2) -> void:
 	if absf(direction.x) > 0.01:
-		_anim.flip_h = direction.x < 0.0
+		_anim.flip_h = direction.x > 0.0
 	_anim.modulate = Color(1.5, 1.5, 1.5) if _hit_flash_timer > 0.0 else Color.WHITE
 
 ## ---- 公共方法 ----
